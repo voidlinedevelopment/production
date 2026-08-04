@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('api', {
   disconnectObs: () => ipcRenderer.invoke('disconnect-obs'),
   setStartup: (enabled) => ipcRenderer.invoke('set-startup', enabled),
   getStartup: () => ipcRenderer.invoke('get-startup'),
+  reconnect: () => ipcRenderer.invoke('reconnect'),
   quitApp: () => ipcRenderer.invoke('quit-app'),
   installUpdate: () => ipcRenderer.invoke('install-update'),
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),

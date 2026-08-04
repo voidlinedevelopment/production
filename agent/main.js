@@ -159,6 +159,13 @@ function createTray() {
     },
     { type: 'separator' },
     {
+      label: 'Reconnect to Server',
+      click: () => {
+        startConnections();
+        broadcast();
+      }
+    },
+    {
       label: 'Check for Updates',
       click: checkForUpdates
     },
@@ -255,6 +262,11 @@ ipcMain.handle('install-update', () => {
 
 ipcMain.handle('check-for-updates', () => {
   checkForUpdates();
+});
+
+ipcMain.handle('reconnect', () => {
+  startConnections();
+  broadcast();
 });
 
 app.whenReady().then(() => {

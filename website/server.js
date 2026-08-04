@@ -497,7 +497,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('obs-connect', async (data) => {
-    const { teamId, connId, host, port, password } = data;
+    const { teamId, connId } = data;
     const conn = await getOne('SELECT * FROM obs_connections WHERE id = ?', [connId]);
 
     if (conn && conn.agent_token) {
@@ -513,39 +513,11 @@ io.on('connection', (socket) => {
       return;
     }
 
-    const result = await obsService.connect(connId, host, port, password);
-
-    if (result.success) {
-      await runQuery(
-        "UPDATE obs_connections SET status = 'connected' WHERE id = ?",
-        [connId]
-      );
-      io.to(`team-${teamId}`).emit('obs-status', { connId, connected: true });
-      io.to(`team-${teamId}`).emit('obs-scene', {
-        connId,
-        scene: result.info.currentScene,
-        scenes: result.info.scenes
-      });
-      io.to(`team-${teamId}`).emit('obs-stream-status', {
-        connId,
-        streaming: result.info.streaming
-      });
-      io.to(`team-${teamId}`).emit('obs-recording-status', {
-        connId,
-        recording: result.info.recording
-      });
-      io.to(`team-${teamId}`).emit('obs-stats', {
-        connId,
-        fps: result.info.fps
-      });
-    } else {
-      await runQuery(
-        "UPDATE obs_connections SET status = 'disconnected' WHERE id = ?",
-        [connId]
-      );
-      io.to(`team-${teamId}`).emit('obs-status', { connId, connected: false });
-      io.to(`team-${teamId}`).emit('obs-error', { connId, error: result.error });
-    }
+    io.to(`team-${teamId}`).emit('obs-status', { connId, connected: false });
+    io.to(`team-${teamId}`).emit('obs-error', {
+      connId,
+      error: 'This OBS connection is not linked to an OBS Agent, so it cannot be reached from the server. Install the Production OBS Agent on the streaming PC and use its connection (Add Connection -> Agent -> Agent Setup).'
+    });
   });
 
   socket.on('obs-disconnect', async (data) => {

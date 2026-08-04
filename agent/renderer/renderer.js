@@ -9,6 +9,7 @@ function setStatus(s) {
   const server = $('server-status');
   server.textContent = s.serverConnected ? 'Connected' : 'Disconnected';
   server.className = `row-value ${s.serverConnected ? 'text-ok' : ''}`;
+  $('server-dot').className = `status-dot ${s.serverConnected ? 'status-online' : 'status-offline'}`;
 
   const agent = $('agent-status');
   const agentKind = s.registered ? 'badge-ok' : s.lastError ? 'badge-err' : 'badge-dim';
@@ -18,6 +19,7 @@ function setStatus(s) {
   const obs = $('obs-status');
   obs.textContent = s.obsConnected ? 'Connected' : s.obsError ? 'Error' : 'Disconnected';
   obs.className = `row-value ${s.obsConnected ? 'text-ok' : s.obsError ? 'text-err' : ''}`;
+  $('obs-dot').className = `status-dot ${s.obsConnected ? 'status-online' : 'status-offline'}`;
 
   const errWrap = $('obs-error-wrap');
   if (s.obsError) {
@@ -34,7 +36,10 @@ function setStatus(s) {
   $('recording').textContent = s.recording ? 'Recording' : 'No';
   $('recording').style.color = s.recording ? '#f85149' : '';
 
-  if (s.version) $('version').textContent = s.version;
+  if (s.version) {
+    $('version').textContent = s.version;
+    $('version-big').textContent = s.version;
+  }
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
@@ -44,6 +49,27 @@ window.addEventListener('DOMContentLoaded', async () => {
   $('obsPassword').value = settings.obsPassword || '';
   $('startup').checked = await window.api.getStartup();
   $('version').textContent = await window.api.getVersion();
+  $('version-big').textContent = await window.api.getVersion();
+
+  document.querySelectorAll('.tab').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach((t) => t.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach((p) => p.classList.remove('active'));
+      tab.classList.add('active');
+      const panel = $(`tab-${tab.dataset.tab}`);
+      if (panel) panel.classList.add('active');
+    });
+  });
+
+  $('reconnect-btn').addEventListener('click', async () => {
+    $('reconnect-btn').disabled = true;
+    $('reconnect-btn').textContent = 'Reconnecting...';
+    await window.api.reconnect();
+    setTimeout(() => {
+      $('reconnect-btn').disabled = false;
+      $('reconnect-btn').textContent = 'Reconnect to Server';
+    }, 1500);
+  });
 
   $('startup').addEventListener('change', (e) => {
     window.api.setStartup(e.target.checked);
