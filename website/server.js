@@ -40,6 +40,9 @@ app.use(helmet({
 app.use(compression());
 app.use(morgan('combined'));
 
+// Trust proxy (Cloudflare tunnel sends X-Forwarded-For)
+app.set('trust proxy', 1);
+
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -57,8 +60,7 @@ app.use(methodOverride('_method'));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Simple SQLite Session Store
-const EventEmitter = require('events');
-class SQLiteSessionStore extends EventEmitter {
+class SQLiteSessionStore extends session.Store {
   constructor(dbPath) {
     super();
     const sqlite3 = require('sqlite3').verbose();
