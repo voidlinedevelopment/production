@@ -138,7 +138,7 @@
   <% } %>
 </div>
 
-<script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
 <script>
   const socket = io();
   const teamId = '<%= team.id %>';
@@ -431,12 +431,20 @@
   socket.on('obs-overlay-result', (data) => {
     const el = document.getElementById(`overlay-status-${data.connId}`);
     if (!el) return;
-    if (data.success) {
+    if (data.stage === 'saved') {
+      el.textContent = data.text
+        ? `Overlay text saved: "${data.text}" — it is live on the overlay browser source.`
+        : 'Overlay text cleared.';
+      el.className = 'text-xs text-green-400 mt-2';
+    } else if (data.stage === 'offline') {
+      el.textContent = 'Text saved, but the agent is offline: ' + (data.error || '');
+      el.className = 'text-xs text-amber-400 mt-2';
+    } else if (data.success) {
       el.textContent = data.enabled ? 'Overlay shown in OBS.' : 'Overlay hidden.';
       el.className = 'text-xs text-green-400 mt-2';
     } else {
-      el.textContent = 'Overlay failed: ' + (data.error || 'unknown error');
-      el.className = 'text-xs text-red-400 mt-2';
+      el.textContent = 'Text is saved, but the browser source could not be auto-created in OBS: ' + (data.error || 'unknown error');
+      el.className = 'text-xs text-amber-400 mt-2';
     }
   });
 

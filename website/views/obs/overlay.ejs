@@ -36,20 +36,33 @@
       text-overflow: ellipsis;
       width: 100%;
     }
+    #ready {
+      position: absolute;
+      top: 8px;
+      right: 10px;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.55);
+      background: rgba(0, 0, 0, 0.5);
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body>
   <div id="bar"><div id="text"></div></div>
+  <div id="ready">Overlay ready — set text on the OBS Control page</div>
 
-  <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
   <script>
     const connId = '<%= connId %>';
     const textEl = document.getElementById('text');
     const barEl = document.getElementById('bar');
+    const readyEl = document.getElementById('ready');
 
     function setText(t) {
       textEl.textContent = t || '';
       barEl.style.display = (t && t.trim()) ? 'flex' : 'none';
+      readyEl.style.display = (t && t.trim()) ? 'none' : 'block';
     }
 
     setText('');
