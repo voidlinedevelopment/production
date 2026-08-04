@@ -1,0 +1,67 @@
+<div class="max-w-4xl mx-auto">
+  <div class="mb-8">
+    <a href="/obs/<%= team.id %>" class="text-surface-400 hover:text-white text-sm inline-flex items-center gap-1 mb-4">
+      <i class="fas fa-arrow-left"></i> Back to OBS
+    </a>
+    <h1 class="text-2xl font-bold">OBS Connections</h1>
+    <p class="text-surface-400 mt-1">Manage OBS Studio connections for your team.</p>
+  </div>
+
+  <div class="glass-card rounded-xl p-6 mb-6">
+    <h2 class="text-lg font-semibold mb-4">Add Connection</h2>
+    <form method="POST" action="/obs/<%= team.id %>/connections" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-medium text-surface-300 mb-2">Connection Name</label>
+        <input type="text" name="name" required placeholder="Main OBS"
+          class="w-full bg-surface-900 border border-surface-700 rounded-lg px-4 py-2.5 text-white placeholder-surface-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-surface-300 mb-2">Host / IP</label>
+        <input type="text" name="host" value="127.0.0.1" placeholder="127.0.0.1"
+          class="w-full bg-surface-900 border border-surface-700 rounded-lg px-4 py-2.5 text-white placeholder-surface-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-surface-300 mb-2">Port</label>
+        <input type="number" name="port" value="4455" placeholder="4455"
+          class="w-full bg-surface-900 border border-surface-700 rounded-lg px-4 py-2.5 text-white placeholder-surface-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-surface-300 mb-2">Password</label>
+        <input type="password" name="password" placeholder="Optional"
+          class="w-full bg-surface-900 border border-surface-700 rounded-lg px-4 py-2.5 text-white placeholder-surface-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors">
+      </div>
+      <div class="md:col-span-2">
+        <button type="submit" class="btn-primary px-6 py-2.5 rounded-xl text-white font-medium text-sm">
+          <i class="fas fa-plus mr-2"></i>Add Connection
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <h2 class="text-lg font-semibold mb-4">Existing Connections</h2>
+  <% if (connections.length === 0) { %>
+    <div class="glass-card rounded-xl p-8 text-center">
+      <p class="text-surface-400">No connections configured yet.</p>
+    </div>
+  <% } else { %>
+    <div class="space-y-3">
+      <% connections.forEach(conn => { %>
+        <div class="glass-card rounded-xl p-4 flex items-center gap-4">
+          <div class="status-dot <%= conn.status === 'connected' ? 'status-online' : 'status-offline' %>"></div>
+          <div class="flex-1 min-w-0">
+            <h3 class="font-semibold"><%= conn.name %></h3>
+            <p class="text-sm text-surface-400"><%= conn.host %>:<%= conn.port %></p>
+          </div>
+          <span class="text-xs px-2 py-0.5 rounded-full <%= conn.status === 'connected' ? 'bg-green-500/20 text-green-400' : 'bg-surface-700 text-surface-400' %>">
+            <%= conn.status %>
+          </span>
+          <form method="POST" action="/obs/<%= team.id %>/connections/<%= conn.id %>/delete" onsubmit="return confirm('Remove this connection?')">
+            <button type="submit" class="p-2 rounded-lg hover:bg-red-500/15 text-surface-500 hover:text-red-400 transition-colors">
+              <i class="fas fa-trash text-sm"></i>
+            </button>
+          </form>
+        </div>
+      <% }) %>
+    </div>
+  <% } %>
+</div>

@@ -1,0 +1,164 @@
+<div class="max-w-7xl mx-auto">
+  <div class="mb-8">
+    <a href="/teams" class="text-surface-400 hover:text-white text-sm inline-flex items-center gap-1 mb-4">
+      <i class="fas fa-arrow-left"></i> Back to Teams
+    </a>
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center flex-shrink-0">
+          <% if (team.logo) { %>
+            <img src="<%= team.logo %>" alt="" class="w-16 h-16 rounded-xl object-cover">
+          <% } else { %>
+            <span class="text-white font-bold text-2xl"><%= team.name.charAt(0).toUpperCase() %></span>
+          <% } %>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold"><%= team.name %></h1>
+          <p class="text-surface-400"><%= team.description || 'No description' %></p>
+        </div>
+      </div>
+      <% if (isOwner) { %>
+        <div class="flex gap-2">
+          <a href="/teams/<%= team.id %>/edit" class="px-4 py-2 rounded-lg bg-surface-800 hover:bg-surface-700 text-sm font-medium transition-colors">
+            <i class="fas fa-edit mr-1"></i> Edit
+          </a>
+          <form method="POST" action="/teams/<%= team.id %>?_method=DELETE" onsubmit="return confirm('Are you sure? This cannot be undone.')">
+            <button type="submit" class="px-4 py-2 rounded-lg bg-red-500/15 hover:bg-red-500/25 text-red-400 text-sm font-medium transition-colors">
+              <i class="fas fa-trash mr-1"></i> Delete
+            </button>
+          </form>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2 space-y-6">
+      <div class="glass-card rounded-xl p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-semibold">Members (<%= members.length %>)</h2>
+          <a href="/members/<%= team.id %>" class="text-brand-400 hover:text-brand-300 text-sm">Manage</a>
+        </div>
+        <div class="space-y-2">
+          <% members.slice(0, 8).forEach(member => { %>
+            <div class="flex items-center gap-3 py-2">
+              <div class="status-dot status-online"></div>
+              <% if (member.avatar) { %>
+                <img src="https://cdn.discordapp.com/avatars/<%= member.discord_id %>/<%= member.avatar %>.png?size=64" alt="" class="w-8 h-8 rounded-full">
+              <% } else { %>
+                <div class="w-8 h-8 rounded-full bg-surface-700 flex items-center justify-center text-sm font-bold">
+                  <%= member.username.charAt(0).toUpperCase() %>
+                </div>
+              <% } %>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium truncate"><%= member.global_name || member.username %></p>
+              </div>
+              <span class="text-xs px-2 py-0.5 rounded-full bg-surface-800 text-surface-400"><%= member.role_name || 'No Role' %></span>
+            </div>
+          <% }) %>
+        </div>
+      </div>
+
+      <div class="glass-card rounded-xl p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-semibold">Recent Productions</h2>
+          <a href="/productions/<%= team.id %>" class="text-brand-400 hover:text-brand-300 text-sm">View All</a>
+        </div>
+        <% if (productions.length === 0) { %>
+          <p class="text-surface-500 text-sm">No productions yet.</p>
+        <% } else { %>
+          <div class="space-y-2">
+            <% productions.forEach(prod => { %>
+              <a href="/productions/<%= team.id %>/<%= prod.id %>" class="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-800/50 transition-colors">
+                <div class="w-10 h-10 rounded-lg bg-brand-600/15 flex items-center justify-center">
+                  <i class="fas fa-video text-brand-400 text-sm"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-medium truncate"><%= prod.name %></p>
+                  <p class="text-xs text-surface-500"><%= prod.start_time ? new Date(prod.start_time).toLocaleString() : 'No date set' %></p>
+                </div>
+                <span class="text-xs px-2 py-0.5 rounded-full
+                  <%= prod.status === 'live' ? 'bg-red-500/20 text-red-400' : prod.status === 'completed' ? 'bg-green-500/20 text-green-400' : 'bg-surface-700 text-surface-400' %>">
+                  <%= prod.status %>
+                </span>
+              </a>
+            <% }) %>
+          </div>
+        <% } %>
+      </div>
+    </div>
+
+    <div class="space-y-6">
+      <div class="glass-card rounded-xl p-5">
+        <h2 class="text-lg font-semibold mb-4">Quick Actions</h2>
+        <div class="space-y-2">
+          <a href="/productions/<%= team.id %>/create" class="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-800/50 transition-colors">
+            <div class="w-9 h-9 rounded-lg bg-green-500/15 flex items-center justify-center">
+              <i class="fas fa-plus text-green-400"></i>
+            </div>
+            <span class="text-sm font-medium">New Production</span>
+          </a>
+          <a href="/obs/<%= team.id %>" class="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-800/50 transition-colors">
+            <div class="w-9 h-9 rounded-lg bg-purple-500/15 flex items-center justify-center">
+              <i class="fas fa-desktop text-purple-400"></i>
+            </div>
+            <span class="text-sm font-medium">OBS Control</span>
+          </a>
+          <a href="/roles/<%= team.id %>" class="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-800/50 transition-colors">
+            <div class="w-9 h-9 rounded-lg bg-yellow-500/15 flex items-center justify-center">
+              <i class="fas fa-shield-alt text-yellow-400"></i>
+            </div>
+            <span class="text-sm font-medium">Roles & Permissions</span>
+          </a>
+          <a href="/settings/<%= team.id %>" class="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-800/50 transition-colors">
+            <div class="w-9 h-9 rounded-lg bg-surface-700 flex items-center justify-center">
+              <i class="fas fa-cog text-surface-400"></i>
+            </div>
+            <span class="text-sm font-medium">Settings</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="glass-card rounded-xl p-5">
+        <h2 class="text-lg font-semibold mb-4">OBS Connections</h2>
+        <% if (obsConnections.length === 0) { %>
+          <p class="text-surface-500 text-sm mb-3">No OBS connections yet.</p>
+        <% } else { %>
+          <div class="space-y-2 mb-3">
+            <% obsConnections.forEach(conn => { %>
+              <div class="flex items-center gap-3 py-2">
+                <div class="status-dot <%= conn.status === 'connected' ? 'status-online' : 'status-offline' %>"></div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-medium truncate"><%= conn.name %></p>
+                  <p class="text-xs text-surface-500"><%= conn.host %>:<%= conn.port %></p>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
+        <a href="/obs/<%= team.id %>/connections" class="text-brand-400 hover:text-brand-300 text-sm">Manage Connections</a>
+      </div>
+
+      <% if (discordServer) { %>
+        <div class="glass-card rounded-xl p-5">
+          <h2 class="text-lg font-semibold mb-3">Discord Server</h2>
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-[#5865F2]/20 flex items-center justify-center">
+              <i class="fab fa-discord text-[#5865F2]"></i>
+            </div>
+            <div>
+              <p class="text-sm font-medium"><%= discordServer.guild_name %></p>
+              <p class="text-xs text-surface-500">Connected</p>
+            </div>
+          </div>
+        </div>
+      <% } else { %>
+        <div class="glass-card rounded-xl p-5">
+          <h2 class="text-lg font-semibold mb-3">Discord Server</h2>
+          <p class="text-surface-500 text-sm mb-3">No Discord server connected.</p>
+          <a href="/settings/<%= team.id %>" class="text-brand-400 hover:text-brand-300 text-sm">Connect Server</a>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>

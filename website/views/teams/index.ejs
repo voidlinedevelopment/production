@@ -1,0 +1,46 @@
+<div class="max-w-7xl mx-auto">
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <h1 class="text-2xl font-bold">My Teams</h1>
+      <p class="text-surface-400 mt-1">Manage your production teams.</p>
+    </div>
+    <a href="/teams/create" class="btn-primary inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-medium">
+      <i class="fas fa-plus"></i>
+      Create Team
+    </a>
+  </div>
+
+  <% if (teams.length === 0) { %>
+    <div class="glass-card rounded-xl p-12 text-center max-w-lg mx-auto">
+      <div class="w-16 h-16 rounded-full bg-brand-600/15 flex items-center justify-center mx-auto mb-4">
+        <i class="fas fa-users text-brand-400 text-2xl"></i>
+      </div>
+      <h3 class="text-xl font-semibold mb-2">No Teams Yet</h3>
+      <p class="text-surface-400 mb-6">Create your first production team to get started.</p>
+      <a href="/teams/create" class="btn-primary inline-flex items-center gap-2 px-6 py-3 rounded-xl text-white font-medium">
+        <i class="fas fa-plus"></i> Create Team
+      </a>
+    </div>
+  <% } else { %>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <% teams.forEach(team => { %>
+        <a href="/teams/<%= team.id %>" class="glass-card rounded-xl p-5 block">
+          <div class="flex items-center gap-4 mb-4">
+            <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center flex-shrink-0">
+              <% if (team.logo) { %>
+                <img src="<%= team.logo %>" alt="" class="w-14 h-14 rounded-xl object-cover">
+              <% } else { %>
+                <span class="text-white font-bold text-xl"><%= team.name.charAt(0).toUpperCase() %></span>
+              <% } %>
+            </div>
+            <div class="min-w-0">
+              <h3 class="font-semibold text-lg truncate"><%= team.name %></h3>
+              <p class="text-sm text-surface-500">Created <%= new Date(team.created_at).toLocaleDateString() %></p>
+            </div>
+          </div>
+          <p class="text-sm text-surface-400 line-clamp-2"><%= team.description || 'No description' %></p>
+        </a>
+      <% }) %>
+    </div>
+  <% } %>
+</div>

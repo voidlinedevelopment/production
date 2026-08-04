@@ -1,0 +1,148 @@
+<div class="max-w-7xl mx-auto">
+  <div class="mb-8">
+    <a href="/productions/<%= team.id %>" class="text-surface-400 hover:text-white text-sm inline-flex items-center gap-1 mb-4">
+      <i class="fas fa-arrow-left"></i> Back to Productions
+    </a>
+    <div class="flex items-center justify-between">
+      <div>
+        <div class="flex items-center gap-3 mb-2">
+          <h1 class="text-2xl font-bold"><%= production.name %></h1>
+          <span class="text-xs px-2.5 py-0.5 rounded-full font-medium
+            <%= production.status === 'live' ? 'bg-red-500/20 text-red-400' : production.status === 'completed' ? 'bg-green-500/20 text-green-400' : 'bg-surface-700 text-surface-400' %>">
+            <%= production.status.toUpperCase() %>
+          </span>
+        </div>
+        <p class="text-surface-400"><%= production.description || 'No description' %></p>
+      </div>
+      <div class="flex gap-2">
+        <% if (production.status === 'draft') { %>
+          <form method="POST" action="/productions/<%= team.id %>/<%= production.id %>/status">
+            <input type="hidden" name="status" value="live">
+            <button type="submit" class="px-4 py-2 rounded-lg bg-red-500/15 hover:bg-red-500/25 text-red-400 text-sm font-medium transition-colors">
+              <i class="fas fa-broadcast-tower mr-1"></i> Go Live
+            </button>
+          </form>
+        <% } else if (production.status === 'live') { %>
+          <form method="POST" action="/productions/<%= team.id %>/<%= production.id %>/status">
+            <input type="hidden" name="status" value="completed">
+            <button type="submit" class="px-4 py-2 rounded-lg bg-surface-800 hover:bg-surface-700 text-sm font-medium transition-colors">
+              <i class="fas fa-stop mr-1"></i> End Production
+            </button>
+          </form>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2">
+      <div class="glass-card rounded-xl p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-semibold">Rundown</h2>
+        </div>
+
+        <div class="space-y-2 mb-5">
+          <% if (rundown.length === 0) { %>
+            <p class="text-surface-500 text-sm">No rundown items. Add items below.</p>
+          <% } else { %>
+            <% rundown.forEach(item => { %>
+              <div class="flex items-center gap-4 p-3 rounded-lg bg-surface-800/30">
+                <div class="text-xs text-surface-500 font-mono w-16 text-center">
+                  <%= item.start_time ? new Date(item.start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '--:--' %>
+                </div>
+                <div class="w-px h-8 bg-surface-700"></div>
+                <div class="flex-1 min-w-0">
+                  <p class="font-medium text-sm"><%= item.title %></p>
+                  <% if (item.description) { %>
+                    <p class="text-xs text-surface-500"><%= item.description %></p>
+                  <% } %>
+                </div>
+                <span class="text-xs text-surface-600"><%= item.duration || 0 %> min</span>
+                <form method="POST" action="/productions/<%= team.id %>/<%= production.id %>/rundown/<%= item.id %>/delete">
+                  <button type="submit" class="p-1.5 rounded hover:bg-red-500/15 text-surface-600 hover:text-red-400 transition-colors">
+                    <i class="fas fa-times text-xs"></i>
+                  </button>
+                </form>
+              </div>
+            <% }) %>
+          <% } %>
+        </div>
+
+        <form method="POST" action="/productions/<%= team.id %>/<%= production.id %>/rundown" class="border-t border-surface-700/50 pt-4">
+          <h4 class="text-sm font-medium text-surface-300 mb-3">Add Rundown Item</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+            <input type="text" name="title" required placeholder="Item title"
+              class="bg-surface-900 border border-surface-700 rounded-lg px-3 py-2 text-sm text-white placeholder-surface-600 focus:outline-none focus:border-brand-500 transition-colors">
+            <input type="text" name="description" placeholder="Description (optional)"
+              class="bg-surface-900 border border-surface-700 rounded-lg px-3 py-2 text-sm text-white placeholder-surface-600 focus:outline-none focus:border-brand-500 transition-colors">
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+            <input type="datetime-local" name="start_time"
+              class="bg-surface-900 border border-surface-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500 transition-colors">
+            <input type="number" name="duration" placeholder="Duration (min)" min="0"
+              class="bg-surface-900 border border-surface-700 rounded-lg px-3 py-2 text-sm text-white placeholder-surface-600 focus:outline-none focus:border-brand-500 transition-colors">
+            <button type="submit" class="btn-primary px-4 py-2 rounded-lg text-white text-sm font-medium">
+              <i class="fas fa-plus mr-1"></i> Add
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="space-y-6">
+      <div class="glass-card rounded-xl p-5">
+        <h2 class="text-lg font-semibold mb-4">Schedule</h2>
+        <div class="space-y-3">
+          <div>
+            <p class="text-xs text-surface-500">Start Time</p>
+            <p class="text-sm font-medium"><%= production.start_time ? new Date(production.start_time).toLocaleString() : 'Not set' %></p>
+          </div>
+          <div>
+            <p class="text-xs text-surface-500">End Time</p>
+            <p class="text-sm font-medium"><%= production.end_time ? new Date(production.end_time).toLocaleString() : 'Not set' %></p>
+          </div>
+          <div>
+            <p class="text-xs text-surface-500">Created</p>
+            <p class="text-sm font-medium"><%= new Date(production.created_at).toLocaleDateString() %></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-card rounded-xl p-5">
+        <h2 class="text-lg font-semibold mb-4">Assigned Staff (<%= assignedMembers.length %>)</h2>
+        <div class="space-y-2 mb-4">
+          <% assignedMembers.forEach(member => { %>
+            <div class="flex items-center gap-3 py-1.5">
+              <% if (member.avatar) { %>
+                <img src="https://cdn.discordapp.com/avatars/<%= member.user_id %>/<%= member.avatar %>.png?size=64" alt="" class="w-7 h-7 rounded-full">
+              <% } else { %>
+                <div class="w-7 h-7 rounded-full bg-surface-700 flex items-center justify-center text-xs font-bold">
+                  <%= member.username.charAt(0).toUpperCase() %>
+                </div>
+              <% } %>
+              <span class="text-sm flex-1"><%= member.global_name || member.username %></span>
+              <form method="POST" action="/productions/<%= team.id %>/<%= production.id %>/unassign/<%= member.user_id %>">
+                <button type="submit" class="text-surface-600 hover:text-red-400 text-xs transition-colors">
+                  <i class="fas fa-times"></i>
+                </button>
+              </form>
+            </div>
+          <% }) %>
+        </div>
+        <form method="POST" action="/productions/<%= team.id %>/<%= production.id %>/assign" class="flex gap-2">
+          <select name="user_id" class="flex-1 bg-surface-900 border border-surface-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500 transition-colors">
+            <option value="">Select member...</option>
+            <% allMembers.forEach(m => { %>
+              <% if (!assignedMembers.find(am => am.user_id === m.user_id)) { %>
+                <option value="<%= m.user_id %>"><%= m.username %></option>
+              <% } %>
+            <% }) %>
+          </select>
+          <button type="submit" class="px-3 py-2 rounded-lg bg-surface-800 hover:bg-surface-700 text-sm transition-colors">
+            <i class="fas fa-user-plus"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

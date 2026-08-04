@@ -1,0 +1,121 @@
+<div class="max-w-4xl mx-auto">
+  <div class="mb-8">
+    <a href="/teams/<%= team.id %>" class="text-surface-400 hover:text-white text-sm inline-flex items-center gap-1 mb-4">
+      <i class="fas fa-arrow-left"></i> Back to Team
+    </a>
+    <h1 class="text-2xl font-bold">Team Settings</h1>
+    <p class="text-surface-400 mt-1">Configure team settings and integrations.</p>
+  </div>
+
+  <div class="space-y-6">
+    <div class="glass-card rounded-xl p-6">
+      <h2 class="text-lg font-semibold mb-4">
+        <i class="fab fa-discord text-[#5865F2] mr-2"></i>
+        Discord Server Connection
+      </h2>
+
+      <% if (discordServer) { %>
+        <div class="flex items-center gap-4 p-4 bg-surface-800/30 rounded-lg mb-4">
+          <div class="w-12 h-12 rounded-full bg-[#5865F2]/20 flex items-center justify-center">
+            <i class="fab fa-discord text-[#5865F2] text-xl"></i>
+          </div>
+          <div>
+            <p class="font-semibold"><%= discordServer.guild_name %></p>
+            <p class="text-sm text-surface-500">Guild ID: <%= discordServer.guild_id %></p>
+          </div>
+          <span class="ml-auto text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">Connected</span>
+        </div>
+      <% } else { %>
+        <form method="POST" action="/settings/<%= team.id %>/discord" class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-surface-300 mb-2">Guild ID</label>
+              <input type="text" name="guild_id" required placeholder="Discord Server ID"
+                class="w-full bg-surface-900 border border-surface-700 rounded-lg px-4 py-2.5 text-white placeholder-surface-600 focus:outline-none focus:border-brand-500 transition-colors">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-surface-300 mb-2">Server Name</label>
+              <input type="text" name="guild_name" required placeholder="My Discord Server"
+                class="w-full bg-surface-900 border border-surface-700 rounded-lg px-4 py-2.5 text-white placeholder-surface-600 focus:outline-none focus:border-brand-500 transition-colors">
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-surface-300 mb-2">Icon URL (optional)</label>
+            <input type="text" name="icon" placeholder="https://..."
+              class="w-full bg-surface-900 border border-surface-700 rounded-lg px-4 py-2.5 text-white placeholder-surface-600 focus:outline-none focus:border-brand-500 transition-colors">
+          </div>
+          <p class="text-xs text-surface-500">To connect, invite the Production bot to your server first, then enter the server details above.</p>
+          <button type="submit" class="btn-primary px-5 py-2.5 rounded-xl text-white font-medium text-sm">
+            <i class="fas fa-link mr-2"></i>Connect Server
+          </button>
+        </form>
+      <% } %>
+    </div>
+
+    <div class="glass-card rounded-xl p-6">
+      <h2 class="text-lg font-semibold mb-4">
+        <i class="fas fa-exchange-alt text-brand-400 mr-2"></i>
+        Discord Role Sync
+      </h2>
+      <p class="text-sm text-surface-400 mb-4">Map Discord server roles to Production roles for automatic permission sync.</p>
+
+      <div class="space-y-3 mb-4">
+        <% discordRoles.forEach(dr => { %>
+          <div class="flex items-center gap-3 p-3 bg-surface-800/30 rounded-lg">
+            <div class="w-8 h-8 rounded bg-[#5865F2]/20 flex items-center justify-center">
+              <i class="fab fa-discord text-[#5865F2] text-xs"></i>
+            </div>
+            <div class="flex-1">
+              <p class="text-sm font-medium">Discord Role: <%= dr.discord_role_id %></p>
+              <p class="text-xs text-surface-500">Maps to: <%= dr.production_role_name %></p>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+
+      <form method="POST" action="/settings/<%= team.id %>/discord-role" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-surface-300 mb-2">Discord Role ID</label>
+          <input type="text" name="discord_role_id" required placeholder="Discord Role ID"
+            class="w-full bg-surface-900 border border-surface-700 rounded-lg px-4 py-2.5 text-white placeholder-surface-600 focus:outline-none focus:border-brand-500 transition-colors">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-surface-300 mb-2">Production Role</label>
+          <select name="production_role_id" required
+            class="w-full bg-surface-900 border border-surface-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-brand-500 transition-colors">
+            <% productionRoles.forEach(role => { %>
+              <option value="<%= role.id %>"><%= role.name %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="md:col-span-2">
+          <button type="submit" class="px-4 py-2 rounded-lg bg-surface-800 hover:bg-surface-700 text-sm font-medium transition-colors">
+            <i class="fas fa-plus mr-1"></i> Add Role Mapping
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div class="glass-card rounded-xl p-6">
+      <h2 class="text-lg font-semibold mb-4">
+        <i class="fas fa-info-circle text-surface-400 mr-2"></i>
+        Bot Setup
+      </h2>
+      <div class="space-y-3 text-sm text-surface-400">
+        <p>To connect your Discord server:</p>
+        <ol class="list-decimal list-inside space-y-2 text-surface-300">
+          <li>Invite the Production bot to your Discord server</li>
+          <li>Use the <code class="px-1.5 py-0.5 rounded bg-surface-800 text-brand-400">/setup</code> command in your server</li>
+          <li>Enter the Guild ID in the form above</li>
+        </ol>
+        <p class="mt-3">The bot provides:</p>
+        <ul class="list-disc list-inside space-y-1 text-surface-300">
+          <li>Real-time OBS status notifications</li>
+          <li>Stream start/end alerts</li>
+          <li>Scene change notifications</li>
+          <li>Role synchronization</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>

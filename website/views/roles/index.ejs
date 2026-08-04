@@ -1,0 +1,63 @@
+<div class="max-w-5xl mx-auto">
+  <div class="mb-8">
+    <a href="/teams/<%= team.id %>" class="text-surface-400 hover:text-white text-sm inline-flex items-center gap-1 mb-4">
+      <i class="fas fa-arrow-left"></i> Back to Team
+    </a>
+    <h1 class="text-2xl font-bold">Roles & Permissions</h1>
+    <p class="text-surface-400 mt-1">Manage roles and their permissions for <%= team.name %></p>
+  </div>
+
+  <div class="glass-card rounded-xl p-5 mb-6">
+    <h2 class="text-lg font-semibold mb-4">Create Role</h2>
+    <form method="POST" action="/roles/<%= team.id %>/create" class="flex gap-3">
+      <input type="text" name="name" required placeholder="Role name..." maxlength="50"
+        class="flex-1 bg-surface-900 border border-surface-700 rounded-lg px-4 py-2.5 text-white placeholder-surface-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors">
+      <button type="submit" class="btn-primary px-5 py-2.5 rounded-xl text-white font-medium text-sm whitespace-nowrap">
+        <i class="fas fa-plus mr-2"></i>Create
+      </button>
+    </form>
+  </div>
+
+  <div class="space-y-5">
+    <% roles.forEach(role => { %>
+      <div class="glass-card rounded-xl p-5">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-brand-600/20 flex items-center justify-center">
+              <i class="fas fa-shield-alt text-brand-400"></i>
+            </div>
+            <div>
+              <h3 class="font-semibold"><%= role.name %></h3>
+              <p class="text-xs text-surface-500"><%= role.permissions.length %> permissions</p>
+            </div>
+          </div>
+          <% if (role.name !== 'Owner') { %>
+            <form method="POST" action="/roles/<%= team.id %>/<%= role.id %>/delete" onsubmit="return confirm('Delete this role?')">
+              <button type="submit" class="p-2 rounded-lg hover:bg-red-500/15 text-surface-500 hover:text-red-400 transition-colors">
+                <i class="fas fa-trash text-sm"></i>
+              </button>
+            </form>
+          <% } %>
+        </div>
+
+        <form method="POST" action="/roles/<%= team.id %>/<%= role.id %>/permissions">
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+            <% allPermissions.forEach(perm => { %>
+              <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-surface-800/50 cursor-pointer transition-colors">
+                <input type="checkbox" name="permissions" value="<%= perm.id %>"
+                  <%= role.permissions.find(p => p.id === perm.id) ? 'checked' : '' %>
+                  class="w-4 h-4 rounded border-surface-600 bg-surface-900 text-brand-500 focus:ring-brand-500 focus:ring-offset-0">
+                <span class="text-sm text-surface-300"><%= perm.name %></span>
+              </label>
+            <% }) %>
+          </div>
+          <div class="mt-4">
+            <button type="submit" class="px-4 py-2 rounded-lg bg-surface-800 hover:bg-surface-700 text-sm font-medium transition-colors">
+              <i class="fas fa-save mr-1"></i> Save Permissions
+            </button>
+          </div>
+        </form>
+      </div>
+    <% }) %>
+  </div>
+</div>

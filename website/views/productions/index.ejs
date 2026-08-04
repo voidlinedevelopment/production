@@ -1,0 +1,50 @@
+<div class="max-w-7xl mx-auto">
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <a href="/teams/<%= team.id %>" class="text-surface-400 hover:text-white text-sm inline-flex items-center gap-1 mb-4">
+        <i class="fas fa-arrow-left"></i> Back to Team
+      </a>
+      <h1 class="text-2xl font-bold">Productions</h1>
+      <p class="text-surface-400 mt-1">Manage live productions for <%= team.name %></p>
+    </div>
+    <a href="/productions/<%= team.id %>/create" class="btn-primary inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-medium">
+      <i class="fas fa-plus"></i>
+      New Production
+    </a>
+  </div>
+
+  <% if (productions.length === 0) { %>
+    <div class="glass-card rounded-xl p-12 text-center max-w-lg mx-auto">
+      <div class="w-16 h-16 rounded-full bg-green-500/15 flex items-center justify-center mx-auto mb-4">
+        <i class="fas fa-video text-green-400 text-2xl"></i>
+      </div>
+      <h3 class="text-xl font-semibold mb-2">No Productions Yet</h3>
+      <p class="text-surface-400 mb-6">Create your first production to get started.</p>
+      <a href="/productions/<%= team.id %>/create" class="btn-primary inline-flex items-center gap-2 px-6 py-3 rounded-xl text-white font-medium">
+        <i class="fas fa-plus"></i> Create Production
+      </a>
+    </div>
+  <% } else { %>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <% productions.forEach(prod => { %>
+        <a href="/productions/<%= team.id %>/<%= prod.id %>" class="glass-card rounded-xl p-5 block">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs px-2.5 py-0.5 rounded-full font-medium
+              <%= prod.status === 'live' ? 'bg-red-500/20 text-red-400' : prod.status === 'completed' ? 'bg-green-500/20 text-green-400' : 'bg-surface-700 text-surface-400' %>">
+              <%= prod.status.toUpperCase() %>
+            </span>
+            <% if (prod.status === 'live') { %>
+              <span class="status-dot status-live"></span>
+            <% } %>
+          </div>
+          <h3 class="font-semibold text-lg mb-1"><%= prod.name %></h3>
+          <p class="text-sm text-surface-400 line-clamp-2 mb-4"><%= prod.description || 'No description' %></p>
+          <div class="flex items-center gap-2 text-xs text-surface-500">
+            <i class="fas fa-clock"></i>
+            <span><%= prod.start_time ? new Date(prod.start_time).toLocaleString() : 'No start time' %></span>
+          </div>
+        </a>
+      <% }) %>
+    </div>
+  <% } %>
+</div>

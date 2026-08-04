@@ -1,0 +1,62 @@
+<div class="max-w-4xl mx-auto">
+  <div class="mb-8">
+    <a href="/teams/<%= team.id %>" class="text-surface-400 hover:text-white text-sm inline-flex items-center gap-1 mb-4">
+      <i class="fas fa-arrow-left"></i> Back to Team
+    </a>
+    <h1 class="text-2xl font-bold">Members</h1>
+    <p class="text-surface-400 mt-1">Manage team members and their roles.</p>
+  </div>
+
+  <div class="glass-card rounded-xl p-5 mb-6">
+    <h2 class="text-lg font-semibold mb-4">Invite Member</h2>
+    <form method="POST" action="/teams/<%= team.id %>/invite" class="flex gap-3">
+      <input type="text" name="username" required placeholder="Enter Discord username..."
+        class="flex-1 bg-surface-900 border border-surface-700 rounded-lg px-4 py-2.5 text-white placeholder-surface-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors">
+      <button type="submit" class="btn-primary px-5 py-2.5 rounded-xl text-white font-medium text-sm whitespace-nowrap">
+        <i class="fas fa-user-plus mr-2"></i>Invite
+      </button>
+    </form>
+  </div>
+
+  <div class="glass-card rounded-xl overflow-hidden">
+    <div class="p-5 border-b border-surface-700/50">
+      <h2 class="text-lg font-semibold">Team Members (<%= members.length %>)</h2>
+    </div>
+    <div class="divide-y divide-surface-700/50">
+      <% members.forEach(member => { %>
+        <div class="p-4 flex items-center gap-4 hover:bg-surface-800/30 transition-colors">
+          <% if (member.avatar) { %>
+            <img src="https://cdn.discordapp.com/avatars/<%= member.discord_id %>/<%= member.avatar %>.png?size=64" alt="" class="w-10 h-10 rounded-full">
+          <% } else { %>
+            <div class="w-10 h-10 rounded-full bg-surface-700 flex items-center justify-center font-bold">
+              <%= member.username.charAt(0).toUpperCase() %>
+            </div>
+          <% } %>
+          <div class="flex-1 min-w-0">
+            <p class="font-medium truncate"><%= member.global_name || member.username %></p>
+            <p class="text-sm text-surface-500">@<%= member.username %></p>
+          </div>
+          <div class="flex items-center gap-3">
+            <form method="POST" action="/members/<%= team.id %>/<%= member.user_id %>/role" class="flex items-center gap-2">
+              <select name="role_id" onchange="this.form.submit()"
+                class="bg-surface-800 border border-surface-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-brand-500 transition-colors">
+                <% roles.forEach(role => { %>
+                  <option value="<%= role.id %>" <%= member.role_id === role.id ? 'selected' : '' %>><%= role.name %></option>
+                <% }) %>
+              </select>
+            </form>
+            <% if (member.user_id !== team.owner_id) { %>
+              <form method="POST" action="/teams/<%= team.id %>/remove/<%= member.user_id %>" onsubmit="return confirm('Remove this member?')">
+                <button type="submit" class="p-2 rounded-lg hover:bg-red-500/15 text-surface-500 hover:text-red-400 transition-colors" title="Remove member">
+                  <i class="fas fa-user-minus text-sm"></i>
+                </button>
+              </form>
+            <% } else { %>
+              <span class="text-xs px-2 py-0.5 rounded-full bg-yellow-500/15 text-yellow-400">Owner</span>
+            <% } %>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+</div>
