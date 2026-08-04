@@ -54,7 +54,11 @@ class SocketManager extends EventEmitter {
     });
 
     this.socket.on('agent-obs-preview', (data) => {
-      this.obsManager.setPreviewEnabled(!!data.enabled);
+      this.emit('preview-command', !!data.enabled);
+    });
+
+    this.socket.on('agent-obs-overlay', (data) => {
+      this.emit('overlay-command', data);
     });
 
     this.socket.on('agent-obs-command', async (data) => {
@@ -63,7 +67,7 @@ class SocketManager extends EventEmitter {
         let result;
         switch (command) {
           case 'connect':
-            result = { success: true };
+            result = { success: await this.obsManager.connect() };
             break;
           case 'disconnect':
             await this.obsManager.disconnect();
@@ -118,6 +122,18 @@ class SocketManager extends EventEmitter {
   _sendPreview(data) {
     if (this.socket && this.socket.connected) {
       this.socket.emit('agent-obs-preview', { connId: this.connId, image: data.image, width: data.width, height: data.height });
+    }
+  }
+
+  sendPreviewVideo(streamId, data) {
+    if (this.socket && this.socket.connected) {
+      this.socket.emit('agent-obs-preview-video', { connId: this.connId, streamId, data });
+    }
+  }
+
+  sendPreviewLiveStatus(enabled, error) {
+    if (this.socket && this.socket.connected) {
+      this.socket.emit('agent-obs-preview-live', { connId: this.connId, enabled: !!enabled, error });
     }
   }
 

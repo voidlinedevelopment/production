@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
 const { getOne, getAll, runQuery } = require('../../shared/database');
 
 module.exports = {
@@ -19,7 +19,7 @@ module.exports = {
 
       const team = await getOne('SELECT * FROM teams WHERE id = ?', [teamId]);
       if (!team) {
-        return interaction.reply({ content: 'Team not found. Please check the team ID.', ephemeral: true });
+        return interaction.reply({ content: 'Team not found. Please check the team ID.', flags: MessageFlags.Ephemeral });
       }
 
       const existing = await getOne(
@@ -39,9 +39,10 @@ module.exports = {
         );
       }
 
+      const user = await getOne('SELECT id FROM users WHERE discord_id = ?', [interaction.user.id]);
       await runQuery(
         'INSERT INTO activity_logs (team_id, user_id, action) VALUES (?, ?, ?)',
-        [teamId, interaction.user.id, `Discord server connected: ${guild.name}`]
+        [teamId, user ? user.id : null, `Discord server connected: ${guild.name}`]
       );
 
       const embed = {
@@ -60,7 +61,7 @@ module.exports = {
       await interaction.reply({ embeds: [embed] });
     } catch (err) {
       console.error('Setup command error:', err);
-      await interaction.reply({ content: 'An error occurred during setup.', ephemeral: true });
+      await interaction.reply({ content: 'An error occurred during setup.', flags: MessageFlags.Ephemeral });
     }
   }
 };

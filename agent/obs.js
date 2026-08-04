@@ -32,9 +32,13 @@ class OBSManager extends EventEmitter {
     };
   }
 
-  async connect({ obsHost, obsPort, obsPassword }) {
+  async connect({ obsHost, obsPort, obsPassword } = {}) {
     this.enabled = true;
     if (this.obs && this.connected) return true;
+
+    obsHost = obsHost || this._lastHost || '127.0.0.1';
+    obsPort = obsPort || this._lastPort || 4455;
+    if (obsPassword === undefined) obsPassword = this._lastPassword;
 
     try {
       this._createClient();
@@ -207,6 +211,64 @@ class OBSManager extends EventEmitter {
     await this.obs.call('StopRecord');
     this.info.recording = false;
     this.emit('status');
+  }
+
+  async startVirtualCam() {
+    if (this.obs && this.connected) {
+      try { await this.obs.call('StartVirtualCam'); } catch (e) {}
+    }
+  }
+
+  async stopVirtualCam() {
+    if (this.obs && this.connected) {
+      try { await this.obs.call('StopVirtualCam'); } catch (e) {}
+    }
+  }
+
+  async _findInput(name) {
+    const res = await this.obs.call('GetInputList').catch(() => ({ inputs: [] }));
+    return res.inputs.find((i) => i.inputName === name);
+  }
+
+  async enableOverlay(connId) {
+    if (!this.obs || !this.connected) throw new Error('OBS not connected');
+    const name = 'ProductionOverlay';
+    const url = `https://production.ocrp.cc/overlay/${connId}`;
+
+    const existing = await this._findInput(name);
+    if (existing) {
+      await this.obs.call('SetInputSettings', { inputName: name, inputSettings: { url } });
+      await this.obs.call('RefreshBrowserSource', { sourceName: name }).catch(() => {});
+      return;
+    }
+
+    let sceneName = this.info.currentScene;
+    if (!sceneName) {
+      const scene = await this.obs.call('GetCurrentProgramScene');
+      sceneName = scene.currentProgramSceneName;
+    }
+    if (!sceneName) throw new Error('No current scene');
+
+    const video = await this.obs.call('GetVideoSettings').catch(() => ({ baseWidth: 1920, baseHeight: 1080 }));
+    await this.obs.call('CreateInput', {
+      sceneName,
+      inputName: name,
+      inputKind: 'browser_source',
+      inputSettings: {
+        url,
+        width: video.baseWidth || 1920,
+        height: video.baseHeight || 1080,
+        fps: 30
+      }
+    });
+  }
+
+  async disableOverlay() {
+    if (!this.obs || !this.connected) return;
+    const existing = await this._findInput('ProductionOverlay');
+    if (existing) {
+      await this.obs.call('RemoveInput', { inputName: 'ProductionOverlay' }).catch(() => {});
+    }
   }
 
   setConnectionConfig(config) {

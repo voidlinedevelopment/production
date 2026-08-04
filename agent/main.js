@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, session } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { autoUpdater } = require('electron-updater');
@@ -64,6 +64,41 @@ socketManager.on('registered', () => {
 obsManager.on('status', broadcast);
 socketManager.on('status', broadcast);
 
+socketManager.on('preview-command', (enabled) => {
+  if (enabled) {
+    obsManager.setPreviewEnabled(false);
+    obsManager.startVirtualCam();
+  } else {
+    obsManager.setPreviewEnabled(false);
+    obsManager.stopVirtualCam();
+  }
+  if (win && !win.isDestroyed()) {
+    win.webContents.send('preview-command', enabled);
+  }
+});
+
+socketManager.on('overlay-command', (data) => {
+  if (!data) return;
+  if (data.enabled) {
+    obsManager.enableOverlay(data.connId).catch((err) => console.error('[overlay] enable failed:', err.message));
+  } else {
+    obsManager.disableOverlay().catch((err) => console.error('[overlay] disable failed:', err.message));
+  }
+});
+
+ipcMain.on('preview-chunk', (e, { streamId, data }) => {
+  socketManager.sendPreviewVideo(streamId, data);
+});
+
+ipcMain.on('preview-live-status', (e, status) => {
+  if (status && status.ok) {
+    socketManager.sendPreviewLiveStatus(true);
+  } else {
+    socketManager.sendPreviewLiveStatus(false, (status && status.error) || 'Live preview unavailable');
+    obsManager.setPreviewEnabled(true);
+  }
+});
+
 function createWindow() {
   win = new BrowserWindow({
     width: 470,
@@ -71,6 +106,7 @@ function createWindow() {
     title: 'Production OBS Agent',
     icon: path.join(__dirname, 'assets', 'icon.png'),
     backgroundColor: '#0d1117',
+    backgroundThrottling: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -178,6 +214,9 @@ ipcMain.handle('install-update', () => {
 });
 
 app.whenReady().then(() => {
+  session.defaultSession.setPermissionRequestHandler((wc, permission, callback) => {
+    callback(permission === 'media');
+  });
   loadSettings();
   createWindow();
   createTray();

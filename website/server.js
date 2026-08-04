@@ -223,6 +223,20 @@ app.get('/', (req, res) => {
   res.render('login', { layout: false });
 });
 
+// OBS overlay page (transparent lower-third rendered inside an OBS browser source)
+app.get('/overlay/:connId', async (req, res) => {
+  const conn = await getOne('SELECT id, name FROM obs_connections WHERE id = ?', [req.params.connId]);
+  if (!conn) {
+    return res.status(404).send('Not found');
+  }
+  res.render('obs/overlay', {
+    layout: false,
+    title: 'Overlay',
+    connId: conn.id,
+    connName: conn.name
+  });
+});
+
 // 404
 app.use((req, res) => {
   res.status(404).render('error', {
@@ -366,6 +380,50 @@ io.on('connection', (socket) => {
     if (!conn || !socket.teamIds.includes(conn.team_id)) return;
     if (agentOnline(connId)) {
       io.to(`agent-${connId}`).emit('agent-obs-preview', { connId, enabled: !!enabled });
+    }
+  });
+
+  socket.on('agent-obs-preview-video', async (data) => {
+    const connId = socket.agentConnId;
+    if (!connId) return;
+    const conn = await getOne('SELECT team_id FROM obs_connections WHERE id = ?', [connId]);
+    if (!conn) return;
+    io.to(`team-${conn.team_id}`).emit('obs-preview-video', {
+      connId,
+      streamId: data.streamId,
+      data: data.data
+    });
+  });
+
+  socket.on('agent-obs-preview-live', async (data) => {
+    const connId = socket.agentConnId;
+    if (!connId) return;
+    const conn = await getOne('SELECT team_id FROM obs_connections WHERE id = ?', [connId]);
+    if (!conn) return;
+    io.to(`team-${conn.team_id}`).emit('obs-preview-live', {
+      connId,
+      enabled: data.enabled,
+      error: data.error
+    });
+  });
+
+  socket.on('join-overlay', async (data) => {
+    const connId = data && data.connId;
+    if (!connId) return;
+    socket.join(`overlay-${connId}`);
+    const conn = await getOne('SELECT overlay_text FROM obs_connections WHERE id = ?', [connId]);
+    socket.emit('overlay-text', { text: conn ? conn.overlay_text : '' });
+  });
+
+  socket.on('overlay-set', async (data) => {
+    const { connId, text, enabled } = data || {};
+    if (!connId) return;
+    const conn = await getOne('SELECT team_id FROM obs_connections WHERE id = ?', [connId]);
+    if (!conn || !socket.teamIds.includes(conn.team_id)) return;
+    await runQuery('UPDATE obs_connections SET overlay_text = ? WHERE id = ?', [text || '', connId]);
+    io.to(`overlay-${connId}`).emit('overlay-text', { text: text || '' });
+    if (typeof enabled === 'boolean' && agentOnline(connId)) {
+      io.to(`agent-${connId}`).emit('agent-obs-overlay', { connId, enabled });
     }
   });
 

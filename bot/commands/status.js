@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const { getAll, getOne } = require('../../shared/database');
 
 module.exports = {
@@ -16,7 +16,7 @@ module.exports = {
       if (!discordServer) {
         return interaction.reply({
           content: 'This Discord server is not connected to a Production team. Use `/setup` first.',
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         });
       }
 
@@ -52,7 +52,7 @@ module.exports = {
       await interaction.reply({ embeds: [embed] });
     } catch (err) {
       console.error('Status command error:', err);
-      await interaction.reply({ content: 'An error occurred.', ephemeral: true });
+      await interaction.reply({ content: 'An error occurred.', flags: MessageFlags.Ephemeral });
     }
   }
 };

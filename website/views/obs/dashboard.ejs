@@ -56,9 +56,25 @@
 
         <div id="obs-preview-<%= conn.id %>" class="hidden mb-5">
           <div class="relative bg-black rounded-lg overflow-hidden" style="aspect-ratio: 16/9;">
+            <video id="obs-preview-video-<%= conn.id %>" autoplay muted playsinline
+              class="hidden w-full h-full object-contain"></video>
             <img id="obs-preview-img-<%= conn.id %>" src="" alt="Preview"
               class="w-full h-full object-contain">
             <p id="obs-preview-msg-<%= conn.id %>" class="absolute inset-0 flex items-center justify-center text-surface-500 text-sm">Waiting for preview...</p>
+          </div>
+        </div>
+
+        <div class="glass-card rounded-lg p-4 mb-5">
+          <h4 class="text-sm font-semibold text-surface-300 mb-3">Text Overlay</h4>
+          <p class="text-xs text-surface-500 mb-3">Shows a lower-third bar on the OBS stream (requires the OBS Agent + OBS browser sources).</p>
+          <div class="flex items-center gap-2">
+            <input id="overlay-text-<%= conn.id %>" type="text" value="<%= conn.overlay_text || '' %>"
+              placeholder="Text to show on stream"
+              class="flex-1 bg-surface-800 border border-surface-700 rounded-lg px-3 py-2 text-sm text-white placeholder-surface-600 focus:outline-none focus:border-brand-500">
+            <button onclick="setOverlay(<%= conn.id %>, true)"
+              class="px-3 py-2 rounded-lg text-xs font-medium bg-brand-600 hover:bg-brand-500 text-white transition-colors">Show</button>
+            <button onclick="setOverlay(<%= conn.id %>, false)"
+              class="px-3 py-2 rounded-lg text-xs font-medium bg-surface-800 hover:bg-surface-700 text-surface-300 transition-colors">Hide</button>
           </div>
         </div>
 
@@ -163,11 +179,98 @@
     }
   });
 
+  const previewVideo = {};
+
+  function previewQueueAppend(st, buf) {
+    if (st.buffer && !st.buffer.updating) {
+      try { st.buffer.appendBuffer(buf); } catch (e) {}
+    } else {
+      st.queue.push(buf);
+    }
+  }
+
+  socket.on('obs-preview-video', (data) => {
+    let st = previewVideo[data.connId];
+    if (!st || data.streamId !== st.streamId) {
+      if (st && st.ms && st.ms.readyState !== 'closed') {
+        try { st.ms.endOfStream(); } catch (e) {}
+        URL.revokeObjectURL(st.url);
+      }
+      st = previewVideo[data.connId] = { streamId: data.streamId, queue: [], ms: null, buffer: null, url: null };
+      const video = document.getElementById(`obs-preview-video-${data.connId}`);
+      if (video && window.MediaSource) {
+        const ms = new MediaSource();
+        st.ms = ms;
+        st.url = URL.createObjectURL(ms);
+        video.src = st.url;
+        video.play().catch(() => {});
+        ms.addEventListener('sourceopen', () => {
+          try {
+            st.buffer = ms.addSourceBuffer('video/webm;codecs=vp8');
+          } catch (e) {
+            try { st.buffer = ms.addSourceBuffer('video/webm'); } catch (e2) { st.buffer = null; }
+          }
+          if (st.buffer) {
+            st.buffer.addEventListener('updateend', () => {
+              if (st.queue.length && !st.buffer.updating) {
+                st.buffer.appendBuffer(st.queue.shift());
+              }
+            });
+            while (st.queue.length && !st.buffer.updating) {
+              st.buffer.appendBuffer(st.queue.shift());
+            }
+          }
+        });
+      }
+    }
+    const cur = previewVideo[data.connId];
+    previewQueueAppend(cur, new Uint8Array(data.data));
+  });
+
+  function previewStop(connId) {
+    const st = previewVideo[connId];
+    if (st) {
+      if (st.ms && st.ms.readyState !== 'closed') {
+        try { st.ms.endOfStream(); } catch (e) {}
+      }
+      if (st.url) URL.revokeObjectURL(st.url);
+    }
+    delete previewVideo[connId];
+    const video = document.getElementById(`obs-preview-video-${connId}`);
+    if (video) { video.pause(); video.removeAttribute('src'); video.load(); }
+  }
+
+  socket.on('obs-preview-live', (data) => {
+    const connId = data.connId;
+    const video = document.getElementById(`obs-preview-video-${connId}`);
+    const img = document.getElementById(`obs-preview-img-${connId}`);
+    const msg = document.getElementById(`obs-preview-msg-${connId}`);
+    if (data.enabled) {
+      if (video) video.classList.remove('hidden');
+      if (img) img.classList.add('hidden');
+      if (msg) msg.classList.add('hidden');
+    } else {
+      previewStop(connId);
+      if (video) video.classList.add('hidden');
+      if (img) img.classList.remove('hidden');
+      if (msg) {
+        msg.classList.remove('hidden');
+        msg.textContent = data.error || 'Waiting for preview...';
+      }
+    }
+  });
+
+  function setOverlay(connId, enabled) {
+    const text = document.getElementById(`overlay-text-${connId}`).value;
+    socket.emit('overlay-set', { connId, text, enabled });
+  }
+
   function togglePreview(connId) {
     const wrap = document.getElementById(`obs-preview-${connId}`);
     const enable = wrap.classList.contains('hidden');
     socket.emit('obs-preview-control', { connId, enabled: enable });
     wrap.classList.toggle('hidden');
+    if (!enable) previewStop(connId);
   }
 
   socket.on('obs-error', (data) => {

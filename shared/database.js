@@ -205,15 +205,30 @@ function migrate() {
   return new Promise((resolve, reject) => {
     db.all('PRAGMA table_info(obs_connections)', (err, cols) => {
       if (err) return reject(err);
-      const hasAgentToken = cols.some((c) => c.name === 'agent_token');
-      if (hasAgentToken) return resolve();
+      if (!cols.some((c) => c.name === 'agent_token')) {
+        db.run('ALTER TABLE obs_connections ADD COLUMN agent_token TEXT', (migrateErr) => {
+          if (migrateErr) {
+            console.error('Migration error:', migrateErr.message);
+            return resolve();
+          }
+          addOverlayText(resolve, reject);
+        });
+      } else {
+        addOverlayText(resolve, reject);
+      }
+    });
+  });
+}
 
-      db.run('ALTER TABLE obs_connections ADD COLUMN agent_token TEXT', (migrateErr) => {
-        if (migrateErr) {
-          console.error('Migration error:', migrateErr.message);
-        }
-        resolve();
-      });
+function addOverlayText(resolve, reject) {
+  db.all('PRAGMA table_info(obs_connections)', (err, cols) => {
+    if (err) return reject(err);
+    if (cols.some((c) => c.name === 'overlay_text')) return resolve();
+    db.run("ALTER TABLE obs_connections ADD COLUMN overlay_text TEXT DEFAULT ''", (migrateErr) => {
+      if (migrateErr) {
+        console.error('Migration error:', migrateErr.message);
+      }
+      resolve();
     });
   });
 }

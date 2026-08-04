@@ -70,4 +70,94 @@ window.addEventListener('DOMContentLoaded', async () => {
   window.api.onUpdateDownloaded(() => {
     $('update-banner').style.display = 'block';
   });
+
+  window.api.onPreviewCommand((enabled) => {
+    if (enabled) startLivePreview();
+    else stopLivePreview();
+  });
 });
+
+let previewStream = null;
+let previewRecorder = null;
+let previewStreamId = 0;
+
+async function findObsVirtualCam() {
+  try {
+    const warm = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    warm.getTracks().forEach((t) => t.stop());
+  } catch (e) {}
+  for (let attempt = 0; attempt < 10; attempt++) {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const cam = devices.find((d) => d.kind === 'videoinput' && /obs virtual camera/i.test(d.label));
+      if (cam) return cam.deviceId;
+    } catch (e) {}
+    await new Promise((r) => setTimeout(r, 800));
+  }
+  return null;
+}
+
+function stopLivePreview() {
+  if (previewRecorder) {
+    try { previewRecorder.stop(); } catch (e) {}
+    previewRecorder = null;
+  }
+  if (previewStream) {
+    previewStream.getTracks().forEach((t) => t.stop());
+    previewStream = null;
+  }
+}
+
+async function startLivePreview() {
+  stopLivePreview();
+  const streamId = ++previewStreamId;
+
+  const deviceId = await findObsVirtualCam();
+  if (!deviceId) {
+    window.api.previewLiveFailed('OBS Virtual Camera not found. Enable it in OBS (Tools -> Virtual Camera).');
+    return;
+  }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        deviceId: { exact: deviceId },
+        width: { ideal: 640 },
+        height: { ideal: 360 },
+        frameRate: { ideal: 15 }
+      },
+      audio: false
+    });
+    if (streamId !== previewStreamId) {
+      stream.getTracks().forEach((t) => t.stop());
+      return;
+    }
+    previewStream = stream;
+
+    const mime = MediaRecorder.isTypeSupported('video/webm;codecs=vp8')
+      ? 'video/webm;codecs=vp8'
+      : MediaRecorder.isTypeSupported('video/webm')
+        ? 'video/webm'
+        : null;
+    if (!mime) {
+      window.api.previewLiveFailed('MediaRecorder not supported in this build.');
+      return;
+    }
+
+    previewRecorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 900000 });
+    previewRecorder.ondataavailable = (e) => {
+      if (e.data && e.data.size > 0) {
+        e.data.arrayBuffer().then((buf) => {
+          window.api.sendPreviewChunk(streamId, buf);
+        });
+      }
+    };
+    previewRecorder.onerror = (e) => {
+      window.api.previewLiveFailed('Live preview failed: ' + (e.error || 'unknown'));
+    };
+    previewRecorder.start(1000);
+    window.api.previewLiveOk();
+  } catch (err) {
+    window.api.previewLiveFailed('Could not start live preview: ' + err.message);
+  }
+}
