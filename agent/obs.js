@@ -1,6 +1,8 @@
 const OBSWebSocket = require('obs-websocket-js').default;
 const { EventEmitter } = require('events');
 
+const CONNECT_TIMEOUT_MS = 10000;
+
 class OBSManager extends EventEmitter {
   constructor() {
     super();
@@ -42,7 +44,15 @@ class OBSManager extends EventEmitter {
 
     try {
       this._createClient();
-      await this.obs.connect(`ws://${obsHost}:${obsPort}`, obsPassword || undefined);
+      const url = `ws://${obsHost}:${obsPort}`;
+      const timeoutTimer = setTimeout(() => {
+        try { if (this.obs) this.obs.disconnect(); } catch (e) {}
+      }, CONNECT_TIMEOUT_MS);
+      try {
+        await this.obs.connect(url, obsPassword || undefined);
+      } finally {
+        clearTimeout(timeoutTimer);
+      }
       this.connected = true;
       this.error = null;
       await this._refreshInfo();
@@ -51,21 +61,33 @@ class OBSManager extends EventEmitter {
       this.emit('obs-status', { connected: true, info: this.info });
       return true;
     } catch (err) {
-      this.error = err.message;
+      this.connected = false;
+      this.error = err.message || 'Could not connect to OBS';
       this.emit('status');
-      this.emit('obs-status', { connected: false, error: err.message });
+      this.emit('obs-status', { connected: false, error: this.error });
       this._scheduleReconnect();
       return false;
     }
   }
 
   _createClient() {
+    if (this.obs) {
+      try { this.obs.removeAllListeners(); } catch (e) {}
+      try { this.obs.disconnect(); } catch (e) {}
+    }
     this.obs = new OBSWebSocket();
     this.obs.on('ConnectionClosed', () => {
       this.connected = false;
       this._stopPreview();
       this.emit('status');
       this.emit('obs-status', { connected: false });
+      this._scheduleReconnect();
+    });
+    this.obs.on('ConnectionError', (err) => {
+      this.connected = false;
+      this.error = (err && err.message) || 'OBS connection error';
+      this.emit('status');
+      this.emit('obs-status', { connected: false, error: this.error });
       this._scheduleReconnect();
     });
     this.obs.on('CurrentProgramSceneChanged', (data) => {

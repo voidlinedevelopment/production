@@ -260,6 +260,30 @@
     }
   }
 
+  function trimPreviewBuffer(connId) {
+    const st = previewState[connId];
+    const video = document.getElementById(`obs-preview-video-${connId}`);
+    if (!st || !st.buffer || !video) return;
+    if (st.trimming) return;
+    st.trimming = true;
+    try {
+      const ct = video.currentTime;
+      if (!isFinite(ct) || ct <= 0.5) return;
+      const ranges = st.buffer.buffered;
+      if (!ranges || ranges.length === 0) return;
+      const start = ranges.start(0);
+      const end = ranges.end(ranges.length - 1);
+      if (start < ct - 2) {
+        st.buffer.remove(0, Math.min(ct - 2, end));
+      } else if (end - ct > 4) {
+        st.buffer.remove(ct + 1, end);
+      }
+    } catch (e) {}
+    finally {
+      setTimeout(() => { st.trimming = false; }, 50);
+    }
+  }
+
   function tryAddSourceBuffer(connId) {
     const st = previewState[connId];
     if (!st || st.buffer || !st.sourceOpen) return;
@@ -273,7 +297,10 @@
       try {
         st.buffer = st.ms.addSourceBuffer(c);
         st.codec = c;
-        st.buffer.addEventListener('updateend', () => drainPreview(connId));
+        st.buffer.addEventListener('updateend', () => {
+          drainPreview(connId);
+          trimPreviewBuffer(connId);
+        });
         drainPreview(connId);
         return;
       } catch (e) {
@@ -289,7 +316,7 @@
     if (st) previewTeardown(connId);
     st = previewState[connId] = {
       streamId, queue: [], ms: null, buffer: null, url: null,
-      received: 0, sourceOpen: false, codec: previewCodecHint[connId] || null
+      received: 0, sourceOpen: false, codec: previewCodecHint[connId] || null, trimming: false
     };
     const video = document.getElementById(`obs-preview-video-${connId}`);
     if (video && window.MediaSource) {
@@ -297,6 +324,7 @@
       st.ms = ms;
       st.url = URL.createObjectURL(ms);
       video.src = st.url;
+      video.play().catch(() => {});
       ms.addEventListener('sourceopen', () => {
         st.sourceOpen = true;
         tryAddSourceBuffer(connId);
@@ -320,6 +348,7 @@
     st.received += buf.byteLength;
     const info = document.getElementById(`obs-preview-info-${data.connId}`);
     if (info) info.textContent = `${(st.received / 1024).toFixed(0)} KB`;
+    if (st.queue.length > 12) st.queue.splice(0, st.queue.length - 12);
     if (st.buffer && !st.buffer.updating) {
       try { st.buffer.appendBuffer(buf); } catch (e) { console.error('appendBuffer:', e); }
     } else {
@@ -336,7 +365,10 @@
     const info = document.getElementById(`obs-preview-info-${connId}`);
     if (data.enabled) {
       if (data.codec) previewCodecHint[connId] = data.codec;
-      if (video) video.classList.remove('hidden');
+      if (video) {
+        video.classList.remove('hidden');
+        video.play().catch(() => {});
+      }
       if (img) img.classList.add('hidden');
       if (msg) msg.classList.add('hidden');
       if (live) live.classList.remove('hidden');
