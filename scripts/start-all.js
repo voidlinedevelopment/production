@@ -32,7 +32,7 @@ function hasPm2() {
 function startWithPm2() {
   console.log('\n=== Production - starting all services via PM2 ===\n');
 
-  const run = (cmd, args) => {
+  const run = (args) => {
     console.log(`> pm2 ${args.join(' ')}`);
     try {
       execSync(`pm2 ${args.join(' ')}`, { stdio: 'inherit', cwd: ROOT });
@@ -41,9 +41,9 @@ function startWithPm2() {
     }
   };
 
-  run('start', [ECOSYSTEM]);
-  run('save', []);
-  run('logs', []);
+  run(['start', ECOSYSTEM]);
+  run(['save']);
+  run(['logs']);
 }
 
 function startDirect() {
