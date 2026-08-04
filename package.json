@@ -4,13 +4,16 @@
   "description": "Production - Live Production Management Platform",
   "main": "website/server.js",
   "scripts": {
-    "start": "node website/server.js",
+    "start": "node scripts/start-all.js",
+    "start:direct": "node scripts/start-all.js --direct",
+    "start:pm2": "node scripts/start-all.js --pm2",
+    "web": "node website/server.js",
     "bot": "node bot/index.js",
-    "dev:web": "node website/server.js",
-    "dev:bot": "node bot/index.js",
+    "tunnel": "node scripts/start-tunnel.js",
     "pm2:start": "pm2 start ecosystem.config.js",
     "pm2:stop": "pm2 stop all",
-    "pm2:save": "pm2 save"
+    "pm2:save": "pm2 save",
+    "stop": "pm2 stop all"
   },
   "dependencies": {
     "express": "^4.18.2",
