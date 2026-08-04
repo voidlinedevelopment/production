@@ -8,3 +8,6 @@ logs/
 *.log
 .DS_Store
 .env.example
+agent/dist/
+agent/node_modules/
+website/public/downloads/*.exe

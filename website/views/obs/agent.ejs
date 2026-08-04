@@ -21,28 +21,22 @@
   <div class="glass-card rounded-xl p-6 mb-6">
     <h2 class="text-lg font-semibold mb-4">Steps</h2>
     <ol class="space-y-4 text-sm text-surface-300 list-decimal list-inside">
-      <li class="space-y-1">
+      <li>
         <span>In OBS, go to <b>Tools &rarr; WebSocket Server Settings</b>, enable the WebSocket server, set a port (default 4455) and a password.</span>
       </li>
-      <li class="space-y-1">
-        <span>On the streaming PC, open a terminal and run:</span>
-        <pre class="bg-surface-900 border border-surface-700 rounded-lg p-3 text-xs text-surface-300 overflow-x-auto">git clone https://github.com/voidlinedevelopment/production.git
-cd production/agent
-npm install
-copy .env.example .env   # (Windows: copy .env.example .env)</pre>
+      <li>
+        <span>Download and install the <b>Production OBS Agent</b> on this PC:</span>
+        <div class="mt-2">
+          <a href="/agent" class="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-500 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors">
+            <i class="fas fa-download"></i> Download OBS Agent
+          </a>
+        </div>
       </li>
-      <li class="space-y-1">
-        <span>Edit <code>.env</code> — put your token in <code>AGENT_TOKEN</code>, and your OBS WebSocket password in <code>OBS_PASSWORD</code>:</span>
-        <pre class="bg-surface-900 border border-surface-700 rounded-lg p-3 text-xs text-surface-300 overflow-x-auto">SERVER_URL=https://production.ocrp.cc
-AGENT_TOKEN=&lt;paste your token&gt;
-OBS_HOST=127.0.0.1
-OBS_PORT=4455
-OBS_PASSWORD=&lt;your obs password&gt;</pre>
+      <li>
+        <span>Open the app and paste your token below, then set your OBS WebSocket password. Hit <b>Save &amp; Connect</b>.</span>
       </li>
-      <li class="space-y-1">
-        <span>Start the agent and leave it running (OBS must be open):</span>
-        <pre class="bg-surface-900 border border-surface-700 rounded-lg p-3 text-xs text-surface-300 overflow-x-auto">npm start</pre>
-        <span class="text-surface-400">You should see <code>Registered as agent for OBS connection #...</code> then <code>Connected to OBS.</code></span>
+      <li>
+        <span>Keep the app running with OBS open. You should see <b>Server: Connected</b> and <b>OBS: Connected</b>.</span>
       </li>
     </ol>
   </div>
@@ -51,7 +45,8 @@ OBS_PASSWORD=&lt;your obs password&gt;</pre>
     <h2 class="text-lg font-semibold mb-2">Then what?</h2>
     <p class="text-sm text-surface-300">
       Go to the <a href="/obs/<%= team.id %>" class="text-brand-400 hover:underline">OBS Control</a> page. The connection will show
-      <span class="text-green-400 font-medium">Connected</span> once the agent is online, and you can switch scenes, start/stop the stream and recording from the website — no public IP or port forwarding needed.
+      <span class="text-green-400 font-medium">Agent online</span> once the app is running, then
+      <span class="text-green-400 font-medium">Connected</span> once it links to OBS — and you can switch scenes, start/stop the stream and recording from the website. No public IP or port forwarding needed.
     </p>
   </div>
 </div>

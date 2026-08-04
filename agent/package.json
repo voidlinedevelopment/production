@@ -1,14 +1,46 @@
 {
   "name": "production-obs-agent",
   "version": "1.0.0",
-  "private": true,
-  "main": "index.js",
+  "description": "Production OBS Agent - connects your OBS Studio to the Production platform",
+  "main": "main.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "electron .",
+    "dist": "electron-builder --win"
+  },
+  "build": {
+    "appId": "com.production.obsagent",
+    "productName": "Production OBS Agent",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "obs.js",
+      "socket.js",
+      "preload.js",
+      "renderer/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
   },
   "dependencies": {
-    "dotenv": "^16.3.1",
     "obs-websocket-js": "^5.0.6",
     "socket.io-client": "^4.7.4"
+  },
+  "devDependencies": {
+    "electron": "^30.0.0",
+    "electron-builder": "^24.13.3"
   }
 }

@@ -202,6 +202,7 @@ const apiRoutes = require('./routes/api');
 const memberRoutes = require('./routes/members');
 const roleRoutes = require('./routes/roles');
 const settingsRoutes = require('./routes/settings');
+const agentRoutes = require('./routes/agent');
 
 app.use('/auth', authRoutes);
 app.use('/dashboard', dashboardRoutes);
@@ -212,6 +213,7 @@ app.use('/api', apiRoutes);
 app.use('/members', memberRoutes);
 app.use('/roles', roleRoutes);
 app.use('/settings', settingsRoutes);
+app.use('/agent', agentRoutes);
 
 // Home route
 app.get('/', (req, res) => {

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Production OBS Agent</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    body { background-color: #0d1117; color: #e6edf3; }
+  </style>
+</head>
+<body class="min-h-screen">
+  <div class="max-w-md mx-auto p-6">
+    <div class="flex items-center gap-3 mb-6">
+      <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+        <i class="fas fa-tower-broadcast text-white"></i>
+      </div>
+      <div>
+        <h1 class="text-lg font-bold">Production OBS Agent</h1>
+        <p class="text-xs text-surface-500" id="agent-status">Not registered</p>
+      </div>
+    </div>
+
+    <div class="space-y-3 mb-6">
+      <div class="glass-card rounded-xl p-3 flex items-center justify-between">
+        <span class="text-sm text-surface-300"><i class="fas fa-server mr-2 text-surface-500"></i>Server</span>
+        <span id="server-status" class="text-sm font-medium text-surface-500">Disconnected</span>
+      </div>
+      <div class="glass-card rounded-xl p-3 flex items-center justify-between">
+        <span class="text-sm text-surface-300"><i class="fas fa-desktop mr-2 text-surface-500"></i>OBS</span>
+        <span id="obs-status" class="text-sm font-medium text-surface-500">Disconnected</span>
+      </div>
+      <div id="obs-error-wrap" class="hidden rounded-xl p-3 bg-red-500/10 border border-red-500/20">
+        <p class="text-xs text-red-400" id="obs-error"></p>
+      </div>
+    </div>
+
+    <div class="glass-card rounded-xl p-5 mb-6">
+      <h2 class="text-sm font-semibold mb-4">Live Status</h2>
+      <div class="grid grid-cols-2 gap-3 text-center">
+        <div class="bg-surface-900 rounded-lg p-3">
+          <p class="text-xs text-surface-500 mb-1">Current Scene</p>
+          <p id="scene" class="font-semibold text-sm truncate">--</p>
+        </div>
+        <div class="bg-surface-900 rounded-lg p-3">
+          <p class="text-xs text-surface-500 mb-1">Stream</p>
+          <p id="stream" class="font-semibold text-sm">Not Streaming</p>
+        </div>
+        <div class="bg-surface-900 rounded-lg p-3">
+          <p class="text-xs text-surface-500 mb-1">Recording</p>
+          <p id="recording" class="font-semibold text-sm">No</p>
+        </div>
+        <div class="bg-surface-900 rounded-lg p-3">
+          <p class="text-xs text-surface-500 mb-1">Scenes</p>
+          <p id="scene-count" class="font-semibold text-sm">--</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="glass-card rounded-xl p-5">
+      <h2 class="text-sm font-semibold mb-4">Settings</h2>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-surface-400 mb-1.5">Agent Token</label>
+          <input id="token" type="text" placeholder="Paste your token from the website"
+            class="w-full bg-surface-900 border border-surface-700 rounded-lg px-3 py-2 text-sm text-white placeholder-surface-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors">
+          <p class="text-[11px] text-surface-600 mt-1.5">Website &rarr; OBS Control &rarr; Add Connection (Agent) &rarr; Agent Setup. Saved automatically.</p>
+        </div>
+        <div class="grid grid-cols-3 gap-3">
+          <div class="col-span-1">
+            <label class="block text-xs font-medium text-surface-400 mb-1.5">OBS Host</label>
+            <input id="obsHost" type="text"
+              class="w-full bg-surface-900 border border-surface-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-surface-400 mb-1.5">OBS Port</label>
+            <input id="obsPort" type="number"
+              class="w-full bg-surface-900 border border-surface-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-surface-400 mb-1.5">OBS Password</label>
+            <input id="obsPassword" type="password"
+              class="w-full bg-surface-900 border border-surface-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors">
+          </div>
+        </div>
+        <button id="save-btn"
+          class="w-full bg-brand-600 hover:bg-brand-500 text-white rounded-lg py-2.5 text-sm font-semibold transition-colors">
+          <i class="fas fa-plug mr-2"></i>Save &amp; Connect
+        </button>
+      </div>
+    </div>
+
+    <p class="text-center text-[11px] text-surface-600 mt-6">Settings are saved to a JSON file on this PC and reloaded on next launch.</p>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

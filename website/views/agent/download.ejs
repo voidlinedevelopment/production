@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Production OBS Agent</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    body { background-color: #0d1117; color: #e6edf3; }
+    .glass-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); }
+  </style>
+</head>
+<body class="min-h-screen">
+  <nav class="flex items-center justify-between px-8 py-5 max-w-6xl mx-auto">
+    <div class="flex items-center gap-2.5">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+        <i class="fas fa-tower-broadcast text-white"></i>
+      </div>
+      <span class="text-xl font-bold">Production</span>
+    </div>
+    <a href="/auth/discord" class="text-sm text-surface-400 hover:text-white transition-colors">Sign in</a>
+  </nav>
+
+  <div class="max-w-4xl mx-auto px-8 pb-16">
+    <div class="text-center mb-12">
+      <div class="w-20 h-20 mx-auto mb-5 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+        <i class="fas fa-desktop text-white text-3xl"></i>
+      </div>
+      <h1 class="text-4xl font-bold mb-3">OBS Agent</h1>
+      <p class="text-lg text-surface-400 max-w-2xl mx-auto">
+        A tiny Windows app that links your OBS Studio to Production. It connects out to the server,
+        so no open ports or port forwarding needed.
+      </p>
+      <div class="mt-8">
+        <a id="download-btn" href="/downloads/Production-Agent-Setup.exe"
+          class="inline-flex items-center gap-2.5 bg-brand-600 hover:bg-brand-500 text-white px-8 py-3.5 rounded-xl font-semibold text-lg transition-colors">
+          <i class="fas fa-download"></i> Download for Windows
+        </a>
+        <p id="download-note" class="text-xs text-surface-600 mt-3">Version 1.0.0</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-12">
+      <div class="glass-card rounded-xl p-6">
+        <div class="w-10 h-10 rounded-lg bg-brand-600/20 flex items-center justify-center mb-3">
+          <i class="fas fa-desktop text-brand-400"></i>
+        </div>
+        <h3 class="font-semibold mb-1">Runs on the OBS PC</h3>
+        <p class="text-sm text-surface-500">Installed once on the computer running OBS Studio.</p>
+      </div>
+      <div class="glass-card rounded-xl p-6">
+        <div class="w-10 h-10 rounded-lg bg-brand-600/20 flex items-center justify-center mb-3">
+          <i class="fas fa-plug text-brand-400"></i>
+        </div>
+        <h3 class="font-semibold mb-1">Paste your token</h3>
+        <p class="text-sm text-surface-500">Each person gets their own token from their OBS Connection on the website. Saved automatically.</p>
+      </div>
+      <div class="glass-card rounded-xl p-6">
+        <div class="w-10 h-10 rounded-lg bg-brand-600/20 flex items-center justify-center mb-3">
+          <i class="fas fa-broadcast-tower text-brand-400"></i>
+        </div>
+        <h3 class="font-semibold mb-1">Control from anywhere</h3>
+        <p class="text-sm text-surface-500">Team members switch scenes and start streams from the Production dashboard.</p>
+      </div>
+    </div>
+
+    <div class="glass-card rounded-xl p-6">
+      <h2 class="text-lg font-semibold mb-4">Setup</h2>
+      <ol class="space-y-4 text-sm text-surface-300 list-decimal list-inside">
+        <li><b>Install OBS WebSocket</b> — in OBS go to <b>Tools &rarr; WebSocket Server Settings</b>, enable the server, set a port (default 4455) and a password.</li>
+        <li><b>Install the app</b> — run the installer above and open "Production OBS Agent".</li>
+        <li><b>Get your token</b> — on the website: <b>OBS Control &rarr; Add Connection</b> (type: Agent) &rarr; <b>Agent Setup</b>. Copy your token.</li>
+        <li><b>Paste the token</b> in the app, set your OBS password, hit <b>Save &amp; Connect</b>.</li>
+        <li>Keep the app running with OBS open. Your team can now control it from the dashboard.</li>
+      </ol>
+    </div>
+  </div>
+</body>
+</html>
