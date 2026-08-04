@@ -13,6 +13,7 @@ const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const methodOverride = require('method-override');
 const path = require('path');
+const fs = require('fs');
 const { getDatabase, initializeDatabase, getOne, runQuery } = require('../shared/database');
 
 const app = express();
@@ -61,6 +62,7 @@ class SQLiteSessionStore extends EventEmitter {
   constructor(dbPath) {
     super();
     const sqlite3 = require('sqlite3').verbose();
+    fs.mkdirSync(path.dirname(dbPath), { recursive: true });
     this.db = new sqlite3.Database(dbPath);
     this.db.serialize(() => {
       this.db.run(`CREATE TABLE IF NOT EXISTS sessions (

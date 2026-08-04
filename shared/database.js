@@ -1,7 +1,23 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const fs = require('fs');
 
-const DB_PATH = process.env.DATABASE_PATH || path.join(__dirname, '..', 'database', 'production.db');
+const PROJECT_ROOT = path.join(__dirname, '..');
+const DEFAULT_DB_PATH = path.join(PROJECT_ROOT, 'database', 'production.db');
+
+function resolveDbPath() {
+  let p = process.env.DATABASE_PATH;
+  if (!p) return DEFAULT_DB_PATH;
+
+  if (!path.isAbsolute(p)) {
+    p = path.join(PROJECT_ROOT, p);
+  }
+
+  fs.mkdirSync(path.dirname(p), { recursive: true });
+  return p;
+}
+
+const DB_PATH = resolveDbPath();
 
 let db = null;
 
