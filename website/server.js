@@ -252,6 +252,7 @@ function agentOnline(connId) {
 }
 
 const agentObsState = new Map();
+const lastPreviewLog = new Map();
 
 function emitAgentState(room, connId, state) {
   if (!state || !state.connected || !state.info) return;
@@ -342,6 +343,14 @@ io.on('connection', (socket) => {
     if (!connId) return;
     const conn = await getOne('SELECT team_id FROM obs_connections WHERE id = ?', [connId]);
     if (!conn) return;
+    if (data.image) {
+      const now = Date.now();
+      const last = lastPreviewLog.get(connId) || 0;
+      if (now - last > 10000) {
+        lastPreviewLog.set(connId, now);
+        console.log(`[preview] relaying frame for conn ${connId}, ${data.image.length} chars`);
+      }
+    }
     io.to(`team-${conn.team_id}`).emit('obs-preview', {
       connId,
       image: data.image,

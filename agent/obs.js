@@ -136,14 +136,15 @@ class OBSManager extends EventEmitter {
         imageCompressionQuality: 60
       });
       if (shot && shot.imageData) {
+        const raw = String(shot.imageData).replace(/^data:image\/[a-z0-9+.-]+;base64,/i, '');
         this.emit('preview', {
-          image: shot.imageData,
+          image: raw,
           width: shot.imageWidth || 480,
           height: shot.imageHeight || 270
         });
       }
     } catch (e) {
-      // preview capture can fail while OBS is switching scenes or busy; ignore quietly
+      console.error('[preview] capture failed:', e.message);
     }
   }
 

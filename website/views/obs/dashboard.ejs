@@ -157,7 +157,8 @@
     const img = document.getElementById(`obs-preview-img-${data.connId}`);
     const msg = document.getElementById(`obs-preview-msg-${data.connId}`);
     if (img && data.image) {
-      img.src = `data:image/jpeg;base64,${data.image}`;
+      const src = data.image.startsWith('data:') ? data.image : `data:image/jpeg;base64,${data.image}`;
+      img.src = src;
       if (msg) msg.classList.add('hidden');
     }
   });

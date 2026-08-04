@@ -1,6 +1,6 @@
 {
   "name": "production-obs-agent",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Production OBS Agent - connects your OBS Studio to the Production platform",
   "main": "main.js",
   "scripts": {
