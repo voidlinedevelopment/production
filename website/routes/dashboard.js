@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { isAuthenticated } = require('../middleware/auth');
-const { getAll, getOne } = require('../shared/database');
+const { getAll, getOne } = require('../../shared/database');
 
 router.get('/', isAuthenticated, async (req, res) => {
   try {

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { isAuthenticated } = require('../middleware/auth');
-const { getAll, getOne, runQuery } = require('../shared/database');
+const { getAll, getOne, runQuery } = require('../../shared/database');
 
 // Get team data
 router.get('/teams', isAuthenticated, async (req, res) => {

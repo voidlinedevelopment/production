@@ -3,7 +3,7 @@ const router = express.Router();
 const { isAuthenticated } = require('../middleware/auth');
 const { teamAccess } = require('../middleware/teamAccess');
 const { checkPermission } = require('../middleware/permissions');
-const { getAll, getOne, runQuery } = require('../shared/database');
+const { getAll, getOne, runQuery } = require('../../shared/database');
 
 router.get('/:teamId', isAuthenticated, teamAccess, checkPermission('production.view'), async (req, res) => {
   try {

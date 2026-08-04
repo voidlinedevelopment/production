@@ -3,7 +3,7 @@ const router = express.Router();
 const { isAuthenticated } = require('../middleware/auth');
 const { teamAccess } = require('../middleware/teamAccess');
 const { checkPermission } = require('../middleware/permissions');
-const { getAll, runQuery } = require('../shared/database');
+const { getAll, runQuery } = require('../../shared/database');
 
 router.get('/:teamId', isAuthenticated, teamAccess, checkPermission('roles.manage'), async (req, res) => {
   try {

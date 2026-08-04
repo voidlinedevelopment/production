@@ -1,2 +1,10 @@
+node_modules/
 .env
-/node_modules
+database/*.db
+database/*.db-*
+database/sessions.db*
+.cloudflared/
+logs/
+*.log
+.DS_Store
+.env.example

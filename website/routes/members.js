@@ -4,7 +4,7 @@ const { isAuthenticated } = require('../middleware/auth');
 const { teamAccess } = require('../middleware/teamAccess');
 const { checkPermission } = require('../middleware/permissions');
 const teamController = require('../controllers/teamController');
-const { getAll } = require('../shared/database');
+const { getAll } = require('../../shared/database');
 
 router.get('/:teamId', isAuthenticated, teamAccess, checkPermission('members.manage'), async (req, res) => {
   try {

@@ -55,10 +55,66 @@ app.use(methodOverride('_method'));
 // Static files
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Session
-const SQLiteStore = require('connect-sqlite3')(session);
+// Simple SQLite Session Store
+const EventEmitter = require('events');
+class SQLiteSessionStore extends EventEmitter {
+  constructor(dbPath) {
+    super();
+    const sqlite3 = require('sqlite3').verbose();
+    this.db = new sqlite3.Database(dbPath);
+    this.db.serialize(() => {
+      this.db.run(`CREATE TABLE IF NOT EXISTS sessions (
+        sid TEXT PRIMARY KEY,
+        expired INTEGER,
+        sess TEXT
+      )`);
+      this.db.run('CREATE INDEX IF NOT EXISTS idx_sessions_expired ON sessions(expired)');
+    });
+  }
+  get(sid, cb) {
+    this.db.get('SELECT sess FROM sessions WHERE sid = ? AND expired > ?', [sid, Date.now()], (err, row) => {
+      if (err) return cb(err);
+      if (!row) return cb(null, null);
+      try { cb(null, JSON.parse(row.sess)); } catch (e) { cb(e); }
+    });
+  }
+  set(sid, sess, cb) {
+    const maxAge = sess.cookie && sess.cookie.maxAge ? sess.cookie.maxAge : 86400000;
+    const expired = Date.now() + maxAge;
+    const sessStr = JSON.stringify(sess);
+    this.db.run('INSERT OR REPLACE INTO sessions (sid, expired, sess) VALUES (?, ?, ?)', [sid, expired, sessStr], cb || function(){});
+  }
+  destroy(sid, cb) {
+    this.db.run('DELETE FROM sessions WHERE sid = ?', [sid], cb || function(){});
+  }
+  touch(sid, sess, cb) {
+    const maxAge = sess.cookie && sess.cookie.maxAge ? sess.cookie.maxAge : 86400000;
+    const expired = Date.now() + maxAge;
+    this.db.run('UPDATE sessions SET expired = ? WHERE sid = ?', [expired, sid], cb || function(){});
+  }
+  all(cb) {
+    this.db.all('SELECT sid FROM sessions WHERE expired > ?', [Date.now()], (err, rows) => {
+      if (err) return cb(err);
+      cb(null, (rows || []).map(r => r.sid));
+    });
+  }
+  length(cb) {
+    this.db.get('SELECT COUNT(*) as count FROM sessions WHERE expired > ?', [Date.now()], (err, row) => {
+      if (err) return cb(err);
+      cb(null, row ? row.count : 0);
+    });
+  }
+  clear(cb) {
+    this.db.run('DELETE FROM sessions', cb || function(){});
+  }
+}
+
+const sessionStore = new SQLiteSessionStore(
+  path.join(__dirname, '..', 'database', 'sessions.db')
+);
+
 app.use(session({
-  store: new SQLiteStore({ db: 'sessions.db', dir: path.join(__dirname, '..', 'database') }),
+  store: sessionStore,
   secret: process.env.SESSION_SECRET || 'production-dev-secret-change-me',
   resave: false,
   saveUninitialized: false,
