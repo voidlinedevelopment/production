@@ -66,9 +66,45 @@ window.addEventListener('DOMContentLoaded', async () => {
     window.api.installUpdate();
   });
 
+  $('check-update-btn').addEventListener('click', () => {
+    $('check-update-btn').disabled = true;
+    window.api.checkForUpdates();
+    setTimeout(() => { $('check-update-btn').disabled = false; }, 1500);
+  });
+
   window.api.onStatus(setStatus);
   window.api.onUpdateDownloaded(() => {
     $('update-banner').style.display = 'block';
+  });
+
+  window.api.onUpdateStatus((s) => {
+    const el = $('update-status');
+    switch (s.phase) {
+      case 'checking':
+        el.textContent = 'Checking for updates...';
+        el.style.color = '#8b949e';
+        break;
+      case 'available':
+        el.textContent = `Update ${s.version} found - downloading...`;
+        el.style.color = '#3fb950';
+        break;
+      case 'downloading':
+        el.textContent = `Downloading... ${s.percent}%`;
+        el.style.color = '#3fb950';
+        break;
+      case 'downloaded':
+        el.textContent = `Update ${s.version} downloaded. Click "Restart & Update".`;
+        el.style.color = '#3fb950';
+        break;
+      case 'not-available':
+        el.textContent = 'You have the latest version.';
+        el.style.color = '#8b949e';
+        break;
+      case 'error':
+        el.textContent = 'Update check failed: ' + (s.message || 'unknown error');
+        el.style.color = '#f85149';
+        break;
+    }
   });
 
   window.api.onPreviewCommand((enabled) => {

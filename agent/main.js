@@ -148,6 +148,11 @@ function createTray() {
     },
     { type: 'separator' },
     {
+      label: 'Check for Updates',
+      click: checkForUpdates
+    },
+    { type: 'separator' },
+    {
       label: 'Quit',
       click: () => {
         isQuitting = true;
@@ -166,18 +171,40 @@ function createTray() {
   });
 }
 
+function sendUpdateStatus(status) {
+  if (win && !win.isDestroyed()) {
+    win.webContents.send('update-status', status);
+  }
+}
+
+function checkForUpdates() {
+  sendUpdateStatus({ phase: 'checking' });
+  autoUpdater.checkForUpdates().catch((err) => {
+    sendUpdateStatus({ phase: 'error', message: err.message });
+  });
+}
+
 function setupAutoUpdater() {
   autoUpdater.autoDownload = true;
-  autoUpdater.on('update-available', () => {
+  autoUpdater.on('update-available', (info) => {
+    sendUpdateStatus({ phase: 'available', version: info.version });
     broadcast();
   });
-  autoUpdater.on('update-downloaded', () => {
+  autoUpdater.on('update-not-available', () => {
+    sendUpdateStatus({ phase: 'not-available' });
+  });
+  autoUpdater.on('download-progress', (p) => {
+    sendUpdateStatus({ phase: 'downloading', percent: Math.round(p.percent) });
+  });
+  autoUpdater.on('update-downloaded', (info) => {
+    sendUpdateStatus({ phase: 'downloaded', version: info.version });
     broadcast();
     if (win && !win.isDestroyed()) {
       win.webContents.send('update-downloaded');
     }
   });
   autoUpdater.on('error', (err) => {
+    sendUpdateStatus({ phase: 'error', message: err.message });
     console.error('Auto-update error:', err.message);
   });
   setTimeout(() => {
@@ -211,6 +238,10 @@ ipcMain.handle('set-startup', (e, enabled) => {
 ipcMain.handle('get-startup', () => app.getLoginItemSettings().openAtLogin);
 ipcMain.handle('install-update', () => {
   autoUpdater.quitAndInstall();
+});
+
+ipcMain.handle('check-for-updates', () => {
+  checkForUpdates();
 });
 
 app.whenReady().then(() => {
