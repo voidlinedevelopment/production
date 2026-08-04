@@ -288,6 +288,7 @@ io.on('connection', (socket) => {
         [connId]
       );
       io.to(`team-${teamId}`).emit('obs-status', { connId, connected: false });
+      io.to(`team-${teamId}`).emit('obs-error', { connId, error: result.error });
     }
   });
 
