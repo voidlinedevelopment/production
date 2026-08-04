@@ -208,6 +208,7 @@
   });
 
   const previewState = {};
+  const previewCodecHint = {};
 
   function showPreviewMsg(connId, text) {
     const msg = document.getElementById(`obs-preview-msg-${connId}`);
@@ -217,7 +218,22 @@
     }
   }
 
+  function detectMimeFromChunk(bytes) {
+    let s = '';
+    try {
+      s = new TextDecoder().decode(bytes.subarray(0, Math.min(bytes.length, 262144)));
+    } catch (e) {}
+    if (s.indexOf('V_VP8') !== -1 || s.indexOf('VP80') !== -1) return 'video/webm;codecs=vp8';
+    if (s.indexOf('V_VP9') !== -1 || s.indexOf('VP90') !== -1) return 'video/webm;codecs=vp9';
+    if (s.indexOf('V_AV1') !== -1 || s.indexOf('av01') !== -1) return 'video/webm;codecs=av01.0.04M.08';
+    if (s.indexOf('V_MPEG4') !== -1 || s.indexOf('avc1') !== -1 || s.indexOf('avc3') !== -1) return 'video/mp4;codecs=avc1.42E01E';
+    if (s.indexOf('A_OPUS') !== -1 || s.indexOf('OpusHead') !== -1) return 'audio/webm;codecs=opus';
+    if (s.indexOf('A_VORBIS') !== -1) return 'audio/webm;codecs=vorbis';
+    return null;
+  }
+
   function previewTeardown(connId) {
+    delete previewCodecHint[connId];
     const st = previewState[connId];
     if (st) {
       if (st.ms && st.ms.readyState !== 'closed') {
@@ -244,26 +260,46 @@
     }
   }
 
+  function tryAddSourceBuffer(connId) {
+    const st = previewState[connId];
+    if (!st || st.buffer || !st.sourceOpen) return;
+    const candidates = [st.codec, 'video/webm;codecs=vp8', 'video/webm;codecs=vp9', 'video/webm']
+      .filter(Boolean)
+      .filter((c, i, arr) => arr.indexOf(c) === i);
+    for (let i = 0; i < candidates.length; i++) {
+      const c = candidates[i];
+      if (!st.ms || st.ms.readyState !== 'open') return;
+      if (window.MediaSource && !MediaSource.isTypeSupported(c)) continue;
+      try {
+        st.buffer = st.ms.addSourceBuffer(c);
+        st.codec = c;
+        st.buffer.addEventListener('updateend', () => drainPreview(connId));
+        drainPreview(connId);
+        return;
+      } catch (e) {
+        console.error('addSourceBuffer failed for', c, e);
+      }
+    }
+    showPreviewMsg(connId, 'Video codec not supported');
+  }
+
   function ensurePreview(connId, streamId) {
     let st = previewState[connId];
     if (st && st.streamId === streamId) return st;
     if (st) previewTeardown(connId);
-    st = previewState[connId] = { streamId, queue: [], ms: null, buffer: null, url: null, received: 0 };
+    st = previewState[connId] = {
+      streamId, queue: [], ms: null, buffer: null, url: null,
+      received: 0, sourceOpen: false, codec: previewCodecHint[connId] || null
+    };
     const video = document.getElementById(`obs-preview-video-${connId}`);
-    if (video && window.MediaSource && MediaSource.isTypeSupported('video/webm;codecs=vp8')) {
+    if (video && window.MediaSource) {
       const ms = new MediaSource();
       st.ms = ms;
       st.url = URL.createObjectURL(ms);
       video.src = st.url;
       ms.addEventListener('sourceopen', () => {
-        try {
-          st.buffer = ms.addSourceBuffer('video/webm;codecs=vp8');
-        } catch (e) {
-          console.error('addSourceBuffer failed:', e);
-          showPreviewMsg(connId, 'Video codec not supported');
-        }
-        if (st.buffer) st.buffer.addEventListener('updateend', () => drainPreview(connId));
-        drainPreview(connId);
+        st.sourceOpen = true;
+        tryAddSourceBuffer(connId);
       });
     } else {
       showPreviewMsg(connId, 'Live video not supported by this browser');
@@ -272,12 +308,18 @@
   }
 
   socket.on('obs-preview-video', (data) => {
-    const st = ensurePreview(data.connId, data.streamId);
-    if (!st) return;
-    st.received += (data.data.byteLength || 0);
+    const buf = new Uint8Array(data.data);
+    let st = previewState[data.connId];
+    if (!st || st.streamId !== data.streamId) {
+      st = ensurePreview(data.connId, data.streamId);
+    }
+    if (!st.codec) {
+      st.codec = detectMimeFromChunk(buf);
+      tryAddSourceBuffer(data.connId);
+    }
+    st.received += buf.byteLength;
     const info = document.getElementById(`obs-preview-info-${data.connId}`);
     if (info) info.textContent = `${(st.received / 1024).toFixed(0)} KB`;
-    const buf = new Uint8Array(data.data);
     if (st.buffer && !st.buffer.updating) {
       try { st.buffer.appendBuffer(buf); } catch (e) { console.error('appendBuffer:', e); }
     } else {
@@ -293,11 +335,17 @@
     const live = document.getElementById(`obs-preview-live-${connId}`);
     const info = document.getElementById(`obs-preview-info-${connId}`);
     if (data.enabled) {
+      if (data.codec) previewCodecHint[connId] = data.codec;
       if (video) video.classList.remove('hidden');
       if (img) img.classList.add('hidden');
       if (msg) msg.classList.add('hidden');
       if (live) live.classList.remove('hidden');
       if (info) info.classList.remove('hidden');
+      const st = previewState[connId];
+      if (st && !st.codec && data.codec) {
+        st.codec = data.codec;
+        tryAddSourceBuffer(connId);
+      }
     } else {
       previewTeardown(connId);
       if (video) video.classList.add('hidden');

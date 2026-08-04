@@ -103,7 +103,7 @@ ipcMain.on('preview-chunk', (e, { streamId, data }) => {
 
 ipcMain.on('preview-live-status', (e, status) => {
   if (status && status.ok) {
-    socketManager.sendPreviewLiveStatus(true);
+    socketManager.sendPreviewLiveStatus(true, undefined, status.codec);
   } else {
     socketManager.sendPreviewLiveStatus(false, (status && status.error) || 'Live preview unavailable');
     obsManager.setPreviewEnabled(true);

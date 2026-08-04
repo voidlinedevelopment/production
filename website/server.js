@@ -350,6 +350,7 @@ io.on('connection', (socket) => {
       agentObsState.delete(connId);
     }
     if (data.error) {
+      console.log(`[agent-obs] conn ${connId} OBS error: ${data.error}`);
       io.to(room).emit('obs-error', { connId, error: data.error });
     }
   });
@@ -413,7 +414,8 @@ io.on('connection', (socket) => {
     io.to(`team-${conn.team_id}`).emit('obs-preview-live', {
       connId,
       enabled: data.enabled,
-      error: data.error
+      error: data.error,
+      codec: data.codec
     });
   });
 

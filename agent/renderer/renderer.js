@@ -219,7 +219,7 @@ async function startLivePreview() {
       window.api.previewLiveFailed('Live preview failed: ' + (e.error || 'unknown'));
     };
     previewRecorder.start(1000);
-    window.api.previewLiveOk();
+    window.api.previewLiveOk(mime);
   } catch (err) {
     window.api.previewLiveFailed('Could not start live preview: ' + err.message);
   }

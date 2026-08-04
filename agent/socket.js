@@ -132,9 +132,9 @@ class SocketManager extends EventEmitter {
     }
   }
 
-  sendPreviewLiveStatus(enabled, error) {
+  sendPreviewLiveStatus(enabled, error, codec) {
     if (this.socket && this.socket.connected) {
-      this.socket.emit('agent-obs-preview-live', { connId: this.connId, enabled: !!enabled, error });
+      this.socket.emit('agent-obs-preview-live', { connId: this.connId, enabled: !!enabled, error, codec });
     }
   }
 

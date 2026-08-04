@@ -13,7 +13,7 @@ contextBridge.exposeInMainWorld('api', {
   installUpdate: () => ipcRenderer.invoke('install-update'),
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
   sendPreviewChunk: (streamId, data) => ipcRenderer.send('preview-chunk', { streamId, data }),
-  previewLiveOk: () => ipcRenderer.send('preview-live-status', { ok: true }),
+  previewLiveOk: (codec) => ipcRenderer.send('preview-live-status', { ok: true, codec }),
   previewLiveFailed: (error) => ipcRenderer.send('preview-live-status', { ok: false, error }),
   onStatus: (cb) => ipcRenderer.on('status', (e, d) => cb(d)),
   onUpdateDownloaded: (cb) => ipcRenderer.on('update-downloaded', () => cb()),
