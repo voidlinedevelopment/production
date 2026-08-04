@@ -5,6 +5,19 @@ const { teamAccess } = require('../middleware/teamAccess');
 const { checkPermission } = require('../middleware/permissions');
 const { getAll, getOne, runQuery } = require('../../shared/database');
 
+router.get('/', isAuthenticated, async (req, res) => {
+  try {
+    const teams = await getAll(
+      'SELECT t.id FROM teams t LEFT JOIN team_members tm ON tm.team_id = t.id WHERE t.owner_id = ? OR tm.user_id = ? GROUP BY t.id LIMIT 1',
+      [req.user.id, req.user.id]
+    );
+    if (teams.length === 0) return res.redirect('/teams');
+    res.redirect(`/productions/${teams[0].id}`);
+  } catch (err) {
+    res.redirect('/teams');
+  }
+});
+
 router.get('/:teamId', isAuthenticated, teamAccess, checkPermission('production.view'), async (req, res) => {
   try {
     const productions = await getAll(
