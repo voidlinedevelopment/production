@@ -447,8 +447,17 @@ io.on('connection', (socket) => {
     if (!conn || !socket.teamIds.includes(conn.team_id)) return;
     await runQuery('UPDATE obs_connections SET overlay_text = ? WHERE id = ?', [text || '', connId]);
     io.to(`overlay-${connId}`).emit('overlay-text', { text: text || '' });
-    if (typeof enabled === 'boolean' && agentOnline(connId)) {
-      io.to(`agent-${connId}`).emit('agent-obs-overlay', { connId, enabled });
+    if (typeof enabled === 'boolean') {
+      if (agentOnline(connId)) {
+        io.to(`agent-${connId}`).emit('agent-obs-overlay', { connId, enabled });
+      } else {
+        io.to(`team-${conn.team_id}`).emit('obs-overlay-result', {
+          connId,
+          success: false,
+          enabled,
+          error: `Agent is offline - the overlay text was saved, but the browser source was not added in OBS. Add it manually: OBS Sources -> Browser -> URL: https://production.ocrp.cc/overlay/${connId}`
+        });
+      }
     }
   });
 

@@ -93,7 +93,8 @@ socketManager.on('overlay-command', async (data) => {
     socketManager.sendOverlayResult(true, null, !!data.enabled);
   } catch (err) {
     console.error(`[overlay] ${data.enabled ? 'enable' : 'disable'} failed:`, err.message);
-    socketManager.sendOverlayResult(false, err.message, !!data.enabled);
+    const hint = `https://production.ocrp.cc/overlay/${data.connId}`;
+    socketManager.sendOverlayResult(false, `${err.message} - add the browser source manually in OBS (Sources -> Browser -> URL: ${hint})`, !!data.enabled);
   }
 });
 

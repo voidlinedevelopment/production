@@ -80,6 +80,10 @@
               class="px-3 py-2 rounded-lg text-xs font-medium bg-surface-800 hover:bg-surface-700 text-surface-300 transition-colors">Hide</button>
           </div>
           <p id="overlay-status-<%= conn.id %>" class="text-xs text-surface-500 mt-2"></p>
+          <p class="text-xs text-surface-500 mt-3">
+            OBS browser source URL: <code class="text-brand-400">https://production.ocrp.cc/overlay/<%= conn.id %></code>
+            &mdash; if the agent can't add it automatically, add it manually in OBS (Sources &rarr; Browser &rarr; URL).
+          </p>
         </div>
 
         <div id="obs-controls-<%= conn.id %>" class="<%= conn.status !== 'connected' ? 'hidden' : '' %>">

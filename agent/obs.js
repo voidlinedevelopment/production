@@ -62,7 +62,8 @@ class OBSManager extends EventEmitter {
       return true;
     } catch (err) {
       this.connected = false;
-      this.error = err.message || 'Could not connect to OBS';
+      const base = err.message || 'Could not connect to OBS';
+      this.error = `${base} - enable OBS WebSocket Server (Tools -> WebSocket Server Settings) and make sure the port and password match the agent Settings tab`;
       this.emit('status');
       this.emit('obs-status', { connected: false, error: this.error });
       this._scheduleReconnect();
