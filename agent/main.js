@@ -82,12 +82,18 @@ socketManager.on('preview-command', async (enabled) => {
   }
 });
 
-socketManager.on('overlay-command', (data) => {
+socketManager.on('overlay-command', async (data) => {
   if (!data) return;
-  if (data.enabled) {
-    obsManager.enableOverlay(data.connId).catch((err) => console.error('[overlay] enable failed:', err.message));
-  } else {
-    obsManager.disableOverlay().catch((err) => console.error('[overlay] disable failed:', err.message));
+  try {
+    if (data.enabled) {
+      await obsManager.enableOverlay(data.connId);
+    } else {
+      await obsManager.disableOverlay();
+    }
+    socketManager.sendOverlayResult(true, null, !!data.enabled);
+  } catch (err) {
+    console.error(`[overlay] ${data.enabled ? 'enable' : 'disable'} failed:`, err.message);
+    socketManager.sendOverlayResult(false, err.message, !!data.enabled);
   }
 });
 

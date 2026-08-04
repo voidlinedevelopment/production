@@ -424,6 +424,19 @@ io.on('connection', (socket) => {
     socket.emit('overlay-text', { text: conn ? conn.overlay_text : '' });
   });
 
+  socket.on('agent-obs-overlay-result', async (data) => {
+    const connId = socket.agentConnId;
+    if (!connId) return;
+    const conn = await getOne('SELECT team_id FROM obs_connections WHERE id = ?', [connId]);
+    if (!conn) return;
+    io.to(`team-${conn.team_id}`).emit('obs-overlay-result', {
+      connId,
+      success: data.success,
+      error: data.error,
+      enabled: data.enabled
+    });
+  });
+
   socket.on('overlay-set', async (data) => {
     const { connId, text, enabled } = data || {};
     if (!connId) return;

@@ -137,6 +137,12 @@ class SocketManager extends EventEmitter {
     }
   }
 
+  sendOverlayResult(success, error, enabled) {
+    if (this.socket && this.socket.connected) {
+      this.socket.emit('agent-obs-overlay-result', { connId: this.connId, success: !!success, error, enabled: !!enabled });
+    }
+  }
+
   isConnected() {
     return !!(this.socket && this.socket.connected);
   }

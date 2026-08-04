@@ -61,6 +61,8 @@
             <img id="obs-preview-img-<%= conn.id %>" src="" alt="Preview"
               class="w-full h-full object-contain">
             <p id="obs-preview-msg-<%= conn.id %>" class="absolute inset-0 flex items-center justify-center text-surface-500 text-sm">Waiting for preview...</p>
+            <span id="obs-preview-live-<%= conn.id %>" class="hidden absolute top-2 left-2 px-2 py-0.5 rounded text-xs font-bold bg-red-500 text-white">LIVE</span>
+            <p id="obs-preview-info-<%= conn.id %>" class="hidden absolute bottom-2 right-2 px-2 py-0.5 rounded bg-black/60 text-[10px] text-surface-300"></p>
           </div>
         </div>
 
@@ -76,6 +78,7 @@
             <button onclick="setOverlay(<%= conn.id %>, false)"
               class="px-3 py-2 rounded-lg text-xs font-medium bg-surface-800 hover:bg-surface-700 text-surface-300 transition-colors">Hide</button>
           </div>
+          <p id="overlay-status-<%= conn.id %>" class="text-xs text-surface-500 mt-2"></p>
         </div>
 
         <div id="obs-controls-<%= conn.id %>" class="<%= conn.status !== 'connected' ? 'hidden' : '' %>">
@@ -179,80 +182,103 @@
     }
   });
 
-  const previewVideo = {};
+  const previewState = {};
 
-  function previewQueueAppend(st, buf) {
-    if (st.buffer && !st.buffer.updating) {
-      try { st.buffer.appendBuffer(buf); } catch (e) {}
-    } else {
-      st.queue.push(buf);
+  function showPreviewMsg(connId, text) {
+    const msg = document.getElementById(`obs-preview-msg-${connId}`);
+    if (msg) {
+      msg.textContent = text;
+      msg.classList.remove('hidden');
     }
   }
 
-  socket.on('obs-preview-video', (data) => {
-    let st = previewVideo[data.connId];
-    if (!st || data.streamId !== st.streamId) {
-      if (st && st.ms && st.ms.readyState !== 'closed') {
-        try { st.ms.endOfStream(); } catch (e) {}
-        URL.revokeObjectURL(st.url);
-      }
-      st = previewVideo[data.connId] = { streamId: data.streamId, queue: [], ms: null, buffer: null, url: null };
-      const video = document.getElementById(`obs-preview-video-${data.connId}`);
-      if (video && window.MediaSource) {
-        const ms = new MediaSource();
-        st.ms = ms;
-        st.url = URL.createObjectURL(ms);
-        video.src = st.url;
-        video.play().catch(() => {});
-        ms.addEventListener('sourceopen', () => {
-          try {
-            st.buffer = ms.addSourceBuffer('video/webm;codecs=vp8');
-          } catch (e) {
-            try { st.buffer = ms.addSourceBuffer('video/webm'); } catch (e2) { st.buffer = null; }
-          }
-          if (st.buffer) {
-            st.buffer.addEventListener('updateend', () => {
-              if (st.queue.length && !st.buffer.updating) {
-                st.buffer.appendBuffer(st.queue.shift());
-              }
-            });
-            while (st.queue.length && !st.buffer.updating) {
-              st.buffer.appendBuffer(st.queue.shift());
-            }
-          }
-        });
-      }
-    }
-    const cur = previewVideo[data.connId];
-    previewQueueAppend(cur, new Uint8Array(data.data));
-  });
-
-  function previewStop(connId) {
-    const st = previewVideo[connId];
+  function previewTeardown(connId) {
+    const st = previewState[connId];
     if (st) {
       if (st.ms && st.ms.readyState !== 'closed') {
         try { st.ms.endOfStream(); } catch (e) {}
       }
       if (st.url) URL.revokeObjectURL(st.url);
     }
-    delete previewVideo[connId];
+    delete previewState[connId];
     const video = document.getElementById(`obs-preview-video-${connId}`);
     if (video) { video.pause(); video.removeAttribute('src'); video.load(); }
   }
+
+  function drainPreview(connId) {
+    const st = previewState[connId];
+    if (!st || !st.buffer || st.buffer.updating) return;
+    while (st.queue.length && !st.buffer.updating) {
+      try {
+        st.buffer.appendBuffer(st.queue.shift());
+      } catch (e) {
+        console.error('appendBuffer failed:', e);
+        st.queue = [];
+        showPreviewMsg(connId, 'Video decode error');
+      }
+    }
+  }
+
+  function ensurePreview(connId, streamId) {
+    let st = previewState[connId];
+    if (st && st.streamId === streamId) return st;
+    if (st) previewTeardown(connId);
+    st = previewState[connId] = { streamId, queue: [], ms: null, buffer: null, url: null, received: 0 };
+    const video = document.getElementById(`obs-preview-video-${connId}`);
+    if (video && window.MediaSource && MediaSource.isTypeSupported('video/webm;codecs=vp8')) {
+      const ms = new MediaSource();
+      st.ms = ms;
+      st.url = URL.createObjectURL(ms);
+      video.src = st.url;
+      ms.addEventListener('sourceopen', () => {
+        try {
+          st.buffer = ms.addSourceBuffer('video/webm;codecs=vp8');
+        } catch (e) {
+          console.error('addSourceBuffer failed:', e);
+          showPreviewMsg(connId, 'Video codec not supported');
+        }
+        if (st.buffer) st.buffer.addEventListener('updateend', () => drainPreview(connId));
+        drainPreview(connId);
+      });
+    } else {
+      showPreviewMsg(connId, 'Live video not supported by this browser');
+    }
+    return st;
+  }
+
+  socket.on('obs-preview-video', (data) => {
+    const st = ensurePreview(data.connId, data.streamId);
+    if (!st) return;
+    st.received += (data.data.byteLength || 0);
+    const info = document.getElementById(`obs-preview-info-${data.connId}`);
+    if (info) info.textContent = `${(st.received / 1024).toFixed(0)} KB`;
+    const buf = new Uint8Array(data.data);
+    if (st.buffer && !st.buffer.updating) {
+      try { st.buffer.appendBuffer(buf); } catch (e) { console.error('appendBuffer:', e); }
+    } else {
+      st.queue.push(buf);
+    }
+  });
 
   socket.on('obs-preview-live', (data) => {
     const connId = data.connId;
     const video = document.getElementById(`obs-preview-video-${connId}`);
     const img = document.getElementById(`obs-preview-img-${connId}`);
     const msg = document.getElementById(`obs-preview-msg-${connId}`);
+    const live = document.getElementById(`obs-preview-live-${connId}`);
+    const info = document.getElementById(`obs-preview-info-${connId}`);
     if (data.enabled) {
       if (video) video.classList.remove('hidden');
       if (img) img.classList.add('hidden');
       if (msg) msg.classList.add('hidden');
+      if (live) live.classList.remove('hidden');
+      if (info) info.classList.remove('hidden');
     } else {
-      previewStop(connId);
+      previewTeardown(connId);
       if (video) video.classList.add('hidden');
       if (img) img.classList.remove('hidden');
+      if (live) live.classList.add('hidden');
+      if (info) info.classList.add('hidden');
       if (msg) {
         msg.classList.remove('hidden');
         msg.textContent = data.error || 'Waiting for preview...';
@@ -265,12 +291,29 @@
     socket.emit('overlay-set', { connId, text, enabled });
   }
 
+  socket.on('obs-overlay-result', (data) => {
+    const el = document.getElementById(`overlay-status-${data.connId}`);
+    if (!el) return;
+    if (data.success) {
+      el.textContent = data.enabled ? 'Overlay shown in OBS.' : 'Overlay hidden.';
+      el.className = 'text-xs text-green-400 mt-2';
+    } else {
+      el.textContent = 'Overlay failed: ' + (data.error || 'unknown error');
+      el.className = 'text-xs text-red-400 mt-2';
+    }
+  });
+
   function togglePreview(connId) {
     const wrap = document.getElementById(`obs-preview-${connId}`);
     const enable = wrap.classList.contains('hidden');
     socket.emit('obs-preview-control', { connId, enabled: enable });
     wrap.classList.toggle('hidden');
-    if (!enable) previewStop(connId);
+    if (enable) {
+      const video = document.getElementById(`obs-preview-video-${connId}`);
+      if (video) video.play().catch(() => {});
+    } else {
+      previewTeardown(connId);
+    }
   }
 
   socket.on('obs-error', (data) => {
