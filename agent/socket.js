@@ -103,6 +103,7 @@ class SocketManager extends EventEmitter {
     });
 
     this.socket.on('disconnect', () => {
+      this.connId = null;
       this.emit('status');
     });
   }
@@ -153,7 +154,7 @@ class SocketManager extends EventEmitter {
 
   getStatus() {
     return {
-      serverConnected: this.isConnected(),
+      serverConnected: this.isConnected() && this.isRegistered(),
       registered: this.isRegistered(),
       lastError: this.lastError
     };

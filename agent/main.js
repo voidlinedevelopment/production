@@ -225,6 +225,8 @@ function setupAutoUpdater() {
 
 ipcMain.handle('get-settings', () => settings);
 
+ipcMain.handle('get-version', () => app.getVersion());
+
 ipcMain.handle('save-settings', (e, next) => {
   settings = {
     ...DEFAULTS,

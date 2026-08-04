@@ -43,6 +43,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   $('obsPort').value = settings.obsPort || 4455;
   $('obsPassword').value = settings.obsPassword || '';
   $('startup').checked = await window.api.getStartup();
+  $('version').textContent = await window.api.getVersion();
 
   $('startup').addEventListener('change', (e) => {
     window.api.setStartup(e.target.checked);

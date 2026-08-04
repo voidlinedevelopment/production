@@ -271,6 +271,7 @@ const lastLiveLog = new Map();
 
 function emitAgentState(room, connId, state) {
   if (!state || !state.connected || !state.info) return;
+  io.to(room).emit('obs-status', { connId, connected: true });
   io.to(room).emit('obs-scene', { connId, scene: state.info.currentScene, scenes: state.info.scenes });
   io.to(room).emit('obs-stream-status', { connId, streaming: state.info.streaming });
   io.to(room).emit('obs-recording-status', { connId, recording: state.info.recording });

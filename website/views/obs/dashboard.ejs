@@ -53,6 +53,7 @@
             </button>
           </div>
         </div>
+        <p id="obs-conn-hint-<%= conn.id %>" class="hidden text-xs text-surface-500 mt-2 mb-2"></p>
 
         <div id="obs-preview-<%= conn.id %>" class="hidden mb-5">
           <div class="relative bg-black rounded-lg overflow-hidden" style="aspect-ratio: 16/9;">
@@ -146,7 +147,28 @@
     socket.emit('obs-command', { teamId, connId, command: 'switchScene', scene: sceneName });
   }
 
+  const connState = {};
+  function renderConnHint(connId) {
+    const st = connState[connId];
+    const el = document.getElementById(`obs-conn-hint-${connId}`);
+    if (!el) return;
+    if (st && st.obsConnected) {
+      el.classList.add('hidden');
+      return;
+    }
+    if (st && st.agentOnline) {
+      el.textContent = 'Agent is online but not connected to OBS yet. Click "Connect".';
+      el.classList.remove('hidden');
+    } else {
+      el.textContent = 'Agent is offline. Run the OBS Agent app on the streaming PC and keep it open.';
+      el.classList.remove('hidden');
+    }
+  }
+
   socket.on('obs-status', (data) => {
+    const st = connState[data.connId] || (connState[data.connId] = {});
+    st.obsConnected = data.connected;
+    renderConnHint(data.connId);
     const statusTexts = document.querySelectorAll(`.obs-status-text[data-conn-id="${data.connId}"]`);
     statusTexts.forEach(el => {
       el.textContent = data.connected ? 'Connected' : 'Disconnected';
@@ -165,6 +187,9 @@
   });
 
   socket.on('obs-agent-status', (data) => {
+    const st = connState[data.connId] || (connState[data.connId] = {});
+    st.agentOnline = data.online;
+    renderConnHint(data.connId);
     const els = document.querySelectorAll(`.obs-agent-status[data-conn-id="${data.connId}"]`);
     els.forEach(el => {
       el.textContent = data.online ? 'Agent online' : 'Agent offline';
