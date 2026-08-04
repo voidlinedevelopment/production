@@ -267,6 +267,7 @@ function agentOnline(connId) {
 
 const agentObsState = new Map();
 const lastPreviewLog = new Map();
+const lastLiveLog = new Map();
 
 function emitAgentState(room, connId, state) {
   if (!state || !state.connected || !state.info) return;
@@ -388,6 +389,13 @@ io.on('connection', (socket) => {
     if (!connId) return;
     const conn = await getOne('SELECT team_id FROM obs_connections WHERE id = ?', [connId]);
     if (!conn) return;
+    const now = Date.now();
+    const last = lastLiveLog.get(connId) || 0;
+    if (now - last > 5000) {
+      lastLiveLog.set(connId, now);
+      const bytes = data.data ? (data.data.byteLength || Buffer.byteLength(data.data)) : 0;
+      console.log(`[live] conn ${connId} relaying video chunk, ${bytes} bytes (stream ${data.streamId})`);
+    }
     io.to(`team-${conn.team_id}`).emit('obs-preview-video', {
       connId,
       streamId: data.streamId,
@@ -400,6 +408,7 @@ io.on('connection', (socket) => {
     if (!connId) return;
     const conn = await getOne('SELECT team_id FROM obs_connections WHERE id = ?', [connId]);
     if (!conn) return;
+    console.log(`[live] conn ${connId} live status: enabled=${data.enabled} error=${data.error || 'none'}`);
     io.to(`team-${conn.team_id}`).emit('obs-preview-live', {
       connId,
       enabled: data.enabled,

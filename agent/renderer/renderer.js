@@ -122,7 +122,7 @@ async function findObsVirtualCam() {
     const warm = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
     warm.getTracks().forEach((t) => t.stop());
   } catch (e) {}
-  for (let attempt = 0; attempt < 10; attempt++) {
+  for (let attempt = 0; attempt < 15; attempt++) {
     try {
       const devices = await navigator.mediaDevices.enumerateDevices();
       const cam = devices.find((d) => d.kind === 'videoinput' && /obs virtual camera/i.test(d.label));

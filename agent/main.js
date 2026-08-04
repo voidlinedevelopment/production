@@ -64,9 +64,14 @@ socketManager.on('registered', () => {
 obsManager.on('status', broadcast);
 socketManager.on('status', broadcast);
 
-socketManager.on('preview-command', (enabled) => {
+socketManager.on('preview-command', async (enabled) => {
   if (enabled) {
     obsManager.setPreviewEnabled(false);
+    if (!obsManager.connected) {
+      try {
+        await obsManager.connect({ obsHost: OBS_HOST, obsPort: settings.obsPort, obsPassword: settings.obsPassword });
+      } catch (e) {}
+    }
     obsManager.startVirtualCam();
   } else {
     obsManager.setPreviewEnabled(false);
