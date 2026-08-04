@@ -16,6 +16,9 @@ class SocketManager extends EventEmitter {
     obsManager.on('obs-event', (data) => {
       this._sendEvent(data);
     });
+    obsManager.on('preview', (data) => {
+      this._sendPreview(data);
+    });
   }
 
   connect({ serverUrl, token }) {
@@ -48,6 +51,10 @@ class SocketManager extends EventEmitter {
       this.lastError = null;
       this.emit('status');
       this.emit('registered', data.connId);
+    });
+
+    this.socket.on('agent-obs-preview', (data) => {
+      this.obsManager.setPreviewEnabled(!!data.enabled);
     });
 
     this.socket.on('agent-obs-command', async (data) => {
@@ -105,6 +112,12 @@ class SocketManager extends EventEmitter {
   _sendEvent(data) {
     if (this.socket && this.socket.connected) {
       this.socket.emit('agent-obs-event', { connId: this.connId, event: data.event, data: data.data });
+    }
+  }
+
+  _sendPreview(data) {
+    if (this.socket && this.socket.connected) {
+      this.socket.emit('agent-obs-preview', { connId: this.connId, image: data.image, width: data.width, height: data.height });
     }
   }
 

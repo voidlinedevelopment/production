@@ -16,6 +16,8 @@ class OBSManager extends EventEmitter {
     this.error = null;
     this.reconnectTimer = null;
     this.enabled = false;
+    this.previewTimer = null;
+    this.previewEnabled = false;
   }
 
   getStatus() {
@@ -40,6 +42,7 @@ class OBSManager extends EventEmitter {
       this.connected = true;
       this.error = null;
       await this._refreshInfo();
+      if (this.previewEnabled) this._startPreview();
       this.emit('status');
       this.emit('obs-status', { connected: true, info: this.info });
       return true;
@@ -56,6 +59,7 @@ class OBSManager extends EventEmitter {
     this.obs = new OBSWebSocket();
     this.obs.on('ConnectionClosed', () => {
       this.connected = false;
+      this._stopPreview();
       this.emit('status');
       this.emit('obs-status', { connected: false });
       this._scheduleReconnect();
@@ -96,6 +100,53 @@ class OBSManager extends EventEmitter {
     };
   }
 
+  setPreviewEnabled(enabled) {
+    this.previewEnabled = enabled;
+    if (!this.connected) return;
+    if (enabled) {
+      this._startPreview();
+    } else {
+      this._stopPreview();
+    }
+  }
+
+  _startPreview() {
+    if (this.previewTimer || !this.connected) return;
+    this._capturePreview();
+    this.previewTimer = setInterval(() => this._capturePreview(), 2000);
+  }
+
+  _stopPreview() {
+    if (this.previewTimer) {
+      clearInterval(this.previewTimer);
+      this.previewTimer = null;
+    }
+  }
+
+  async _capturePreview() {
+    if (!this.obs || !this.connected) return;
+    try {
+      const source = this.info.currentScene || (this.info.scenes && this.info.scenes[0]);
+      if (!source) return;
+      const shot = await this.obs.call('GetSourceScreenshot', {
+        sourceName: source,
+        imageFormat: 'jpg',
+        imageWidth: 480,
+        imageHeight: 270,
+        imageCompressionQuality: 60
+      });
+      if (shot && shot.imageData) {
+        this.emit('preview', {
+          image: shot.imageData,
+          width: shot.imageWidth || 480,
+          height: shot.imageHeight || 270
+        });
+      }
+    } catch (e) {
+      // preview capture can fail while OBS is switching scenes or busy; ignore quietly
+    }
+  }
+
   _scheduleReconnect() {
     if (!this.enabled || this.reconnectTimer) return;
     this.reconnectTimer = setTimeout(() => {
@@ -110,6 +161,7 @@ class OBSManager extends EventEmitter {
 
   async disconnect() {
     this.enabled = false;
+    this._stopPreview();
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;

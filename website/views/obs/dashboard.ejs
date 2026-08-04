@@ -47,6 +47,18 @@
               class="px-3 py-1.5 rounded-lg text-xs font-medium bg-brand-600 hover:bg-brand-500 text-white transition-colors obs-connect-btn" data-conn-id="<%= conn.id %>">
               <%= conn.status === 'connected' ? 'Disconnect' : 'Connect' %>
             </button>
+            <button onclick="togglePreview(<%= conn.id %>)"
+              class="px-3 py-1.5 rounded-lg text-xs font-medium bg-surface-800 hover:bg-surface-700 text-surface-300 transition-colors">
+              <i class="fas fa-eye mr-1"></i>Preview
+            </button>
+          </div>
+        </div>
+
+        <div id="obs-preview-<%= conn.id %>" class="hidden mb-5">
+          <div class="relative bg-black rounded-lg overflow-hidden" style="aspect-ratio: 16/9;">
+            <img id="obs-preview-img-<%= conn.id %>" src="" alt="Preview"
+              class="w-full h-full object-contain">
+            <p id="obs-preview-msg-<%= conn.id %>" class="absolute inset-0 flex items-center justify-center text-surface-500 text-sm">Waiting for preview...</p>
           </div>
         </div>
 
@@ -140,6 +152,22 @@
       el.className = `text-xs px-2 py-0.5 rounded-full ${data.online ? 'bg-green-500/20 text-green-400' : 'bg-surface-800 text-surface-400'} obs-agent-status`;
     });
   });
+
+  socket.on('obs-preview', (data) => {
+    const img = document.getElementById(`obs-preview-img-${data.connId}`);
+    const msg = document.getElementById(`obs-preview-msg-${data.connId}`);
+    if (img && data.image) {
+      img.src = `data:image/jpeg;base64,${data.image}`;
+      if (msg) msg.classList.add('hidden');
+    }
+  });
+
+  function togglePreview(connId) {
+    const wrap = document.getElementById(`obs-preview-${connId}`);
+    const enable = wrap.classList.contains('hidden');
+    socket.emit('obs-preview-control', { connId, enabled: enable });
+    wrap.classList.toggle('hidden');
+  }
 
   socket.on('obs-error', (data) => {
     alert('OBS connection failed: ' + data.error);

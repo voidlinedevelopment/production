@@ -251,22 +251,53 @@ function agentOnline(connId) {
   return room ? room.size > 0 : false;
 }
 
+const agentObsState = new Map();
+
+function emitAgentState(room, connId, state) {
+  if (!state || !state.connected || !state.info) return;
+  io.to(room).emit('obs-scene', { connId, scene: state.info.currentScene, scenes: state.info.scenes });
+  io.to(room).emit('obs-stream-status', { connId, streaming: state.info.streaming });
+  io.to(room).emit('obs-recording-status', { connId, recording: state.info.recording });
+  io.to(room).emit('obs-stats', { connId, fps: state.info.fps });
+}
+
+function notifyAgentsPreview(teamId, enabled) {
+  getAll('SELECT id FROM obs_connections WHERE team_id = ? AND agent_token IS NOT NULL', [teamId]).then((conns) => {
+    conns.forEach((c) => {
+      if (agentOnline(c.id)) {
+        io.to(`agent-${c.id}`).emit('agent-obs-preview', { connId: c.id, enabled });
+      }
+    });
+  });
+}
+
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
+  socket.teamIds = [];
 
   socket.on('join-team', async (teamId) => {
     socket.join(`team-${teamId}`);
+    if (!socket.teamIds.includes(teamId)) socket.teamIds.push(teamId);
+
     const agentConns = await getAll(
       'SELECT id FROM obs_connections WHERE team_id = ? AND agent_token IS NOT NULL',
       [teamId]
     );
+
+    const room = io.sockets.adapter.rooms.get(`team-${teamId}`);
+    const isFirstViewer = room && room.size === 1;
+
     agentConns.forEach((c) => {
       socket.emit('obs-agent-status', { connId: c.id, online: agentOnline(c.id) });
+      emitAgentState(`team-${teamId}`, c.id, agentObsState.get(c.id));
     });
+
+    if (isFirstViewer) notifyAgentsPreview(teamId, true);
   });
 
   socket.on('leave-team', (teamId) => {
     socket.leave(`team-${teamId}`);
+    socket.teamIds = socket.teamIds.filter((t) => t !== teamId);
   });
 
   socket.on('agent-auth', async (data) => {
@@ -296,13 +327,36 @@ io.on('connection', (socket) => {
     io.to(room).emit('obs-status', { connId, connected: data.connected });
 
     if (data.connected && data.info) {
-      io.to(room).emit('obs-scene', { connId, scene: data.info.currentScene, scenes: data.info.scenes });
-      io.to(room).emit('obs-stream-status', { connId, streaming: data.info.streaming });
-      io.to(room).emit('obs-recording-status', { connId, recording: data.info.recording });
-      io.to(room).emit('obs-stats', { connId, fps: data.info.fps });
+      agentObsState.set(connId, { connected: true, info: data.info });
+      emitAgentState(room, connId, { connected: true, info: data.info });
+    } else {
+      agentObsState.delete(connId);
     }
     if (data.error) {
       io.to(room).emit('obs-error', { connId, error: data.error });
+    }
+  });
+
+  socket.on('agent-obs-preview', async (data) => {
+    const connId = socket.agentConnId;
+    if (!connId) return;
+    const conn = await getOne('SELECT team_id FROM obs_connections WHERE id = ?', [connId]);
+    if (!conn) return;
+    io.to(`team-${conn.team_id}`).emit('obs-preview', {
+      connId,
+      image: data.image,
+      width: data.width,
+      height: data.height
+    });
+  });
+
+  socket.on('obs-preview-control', async (data) => {
+    const { connId, enabled } = data || {};
+    if (!connId) return;
+    const conn = await getOne('SELECT team_id FROM obs_connections WHERE id = ?', [connId]);
+    if (!conn || !socket.teamIds.includes(conn.team_id)) return;
+    if (agentOnline(connId)) {
+      io.to(`agent-${connId}`).emit('agent-obs-preview', { connId, enabled: !!enabled });
     }
   });
 
@@ -490,8 +544,16 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
+    socket.teamIds.forEach((teamId) => {
+      const room = io.sockets.adapter.rooms.get(`team-${teamId}`);
+      if (!room || room.size === 0) {
+        notifyAgentsPreview(teamId, false);
+      }
+    });
+
     if (socket.agentConnId) {
       const connId = socket.agentConnId;
+      agentObsState.delete(connId);
       getOne('SELECT team_id FROM obs_connections WHERE id = ?', [connId]).then((conn) => {
         if (conn) {
           runQuery("UPDATE obs_connections SET status = 'disconnected' WHERE id = ?", [connId]);

@@ -1,97 +1,192 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Production OBS Agent</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
-    body { background-color: #0d1117; color: #e6edf3; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background-color: #0d1117;
+      color: #e6edf3;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .wrap { max-width: 470px; margin: 0 auto; padding: 24px; }
+    .header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+    .logo {
+      width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+      background: linear-gradient(135deg, #3b82f6, #4f46e5);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .logo span { color: #fff; font-size: 20px; font-weight: 800; }
+    .title { font-size: 17px; font-weight: 700; }
+    .subtitle { font-size: 11px; color: #8b949e; }
+    .card {
+      background: #161b22;
+      border: 1px solid #21262d;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+    .card h2 { font-size: 13px; font-weight: 600; margin-bottom: 12px; color: #e6edf3; }
+    .row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; }
+    .row + .row { border-top: 1px solid #21262d; }
+    .row-label { font-size: 13px; color: #c9d1d9; }
+    .row-value { font-size: 13px; font-weight: 500; color: #8b949e; }
+    .text-ok { color: #3fb950 !important; }
+    .text-err { color: #f85149 !important; }
+    .badge { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 999px; }
+    .badge-ok { background: rgba(63, 185, 80, 0.15); color: #3fb950; }
+    .badge-err { background: rgba(248, 81, 73, 0.15); color: #f85149; }
+    .badge-dim { background: #21262d; color: #8b949e; }
+    .error-box {
+      display: none; margin-top: 10px; padding: 10px 12px; border-radius: 8px;
+      background: rgba(248, 81, 73, 0.1); border: 1px solid rgba(248, 81, 73, 0.25);
+    }
+    .error-box p { font-size: 12px; color: #f85149; word-break: break-word; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .stat { background: #0d1117; border: 1px solid #21262d; border-radius: 8px; padding: 10px; text-align: center; }
+    .stat-label { font-size: 11px; color: #8b949e; margin-bottom: 2px; }
+    .stat-value { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    label.field { display: block; font-size: 11px; font-weight: 500; color: #8b949e; margin-bottom: 5px; }
+    input {
+      width: 100%;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-size: 13px;
+      color: #e6edf3;
+      outline: none;
+    }
+    input:focus { border-color: #4f46e5; box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.3); }
+    input::placeholder { color: #484f58; }
+    .hint { font-size: 11px; color: #6e7681; margin-top: 6px; }
+    .form-group { margin-bottom: 14px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    button.primary {
+      width: 100%;
+      background: #4f46e5;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 11px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button.primary:hover { background: #6366f1; }
+    button.primary:disabled { opacity: 0.6; cursor: default; }
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; }
+    .toggle-row label { font-size: 13px; color: #c9d1d9; cursor: pointer; }
+    .switch { position: relative; width: 40px; height: 22px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; inset: 0; background: #30363d; border-radius: 999px;
+      transition: background 0.15s; cursor: pointer;
+    }
+    .slider:before {
+      content: ""; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px;
+      background: #e6edf3; border-radius: 50%; transition: transform 0.15s;
+    }
+    .switch input:checked + .slider { background: #4f46e5; }
+    .switch input:checked + .slider:before { transform: translateX(18px); }
+    .update-banner {
+      display: none; margin-bottom: 20px; padding: 12px 14px; border-radius: 10px;
+      background: rgba(46, 160, 67, 0.12); border: 1px solid rgba(46, 160, 67, 0.35);
+      font-size: 13px; color: #3fb950;
+    }
+    .update-banner button {
+      margin-left: 10px; background: #238636; color: #fff; border: none;
+      border-radius: 6px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer;
+    }
+    .footer { text-align: center; font-size: 11px; color: #6e7681; margin-top: 24px; }
   </style>
 </head>
-<body class="min-h-screen">
-  <div class="max-w-md mx-auto p-6">
-    <div class="flex items-center gap-3 mb-6">
-      <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-        <i class="fas fa-tower-broadcast text-white"></i>
-      </div>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <div class="logo"><span>&#128225;</span></div>
       <div>
-        <h1 class="text-lg font-bold">Production OBS Agent</h1>
-        <p class="text-xs text-surface-500" id="agent-status">Not registered</p>
+        <div class="title">Production OBS Agent</div>
+        <div class="subtitle" id="agent-status">Not registered</div>
       </div>
     </div>
 
-    <div class="space-y-3 mb-6">
-      <div class="glass-card rounded-xl p-3 flex items-center justify-between">
-        <span class="text-sm text-surface-300"><i class="fas fa-server mr-2 text-surface-500"></i>Server</span>
-        <span id="server-status" class="text-sm font-medium text-surface-500">Disconnected</span>
+    <div id="update-banner" class="update-banner">
+      <span>A new version is ready to install.</span>
+      <button id="update-btn">Restart &amp; Update</button>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <span class="row-label">Server</span>
+        <span id="server-status" class="row-value">Disconnected</span>
       </div>
-      <div class="glass-card rounded-xl p-3 flex items-center justify-between">
-        <span class="text-sm text-surface-300"><i class="fas fa-desktop mr-2 text-surface-500"></i>OBS</span>
-        <span id="obs-status" class="text-sm font-medium text-surface-500">Disconnected</span>
+      <div class="row">
+        <span class="row-label">OBS</span>
+        <span id="obs-status" class="row-value">Disconnected</span>
       </div>
-      <div id="obs-error-wrap" class="hidden rounded-xl p-3 bg-red-500/10 border border-red-500/20">
-        <p class="text-xs text-red-400" id="obs-error"></p>
+      <div id="obs-error-wrap" class="error-box">
+        <p id="obs-error"></p>
       </div>
     </div>
 
-    <div class="glass-card rounded-xl p-5 mb-6">
-      <h2 class="text-sm font-semibold mb-4">Live Status</h2>
-      <div class="grid grid-cols-2 gap-3 text-center">
-        <div class="bg-surface-900 rounded-lg p-3">
-          <p class="text-xs text-surface-500 mb-1">Current Scene</p>
-          <p id="scene" class="font-semibold text-sm truncate">--</p>
+    <div class="card">
+      <h2>Live Status</h2>
+      <div class="grid2">
+        <div class="stat">
+          <div class="stat-label">Current Scene</div>
+          <div id="scene" class="stat-value">--</div>
         </div>
-        <div class="bg-surface-900 rounded-lg p-3">
-          <p class="text-xs text-surface-500 mb-1">Stream</p>
-          <p id="stream" class="font-semibold text-sm">Not Streaming</p>
+        <div class="stat">
+          <div class="stat-label">Stream</div>
+          <div id="stream" class="stat-value">Not Streaming</div>
         </div>
-        <div class="bg-surface-900 rounded-lg p-3">
-          <p class="text-xs text-surface-500 mb-1">Recording</p>
-          <p id="recording" class="font-semibold text-sm">No</p>
+        <div class="stat">
+          <div class="stat-label">Recording</div>
+          <div id="recording" class="stat-value">No</div>
         </div>
-        <div class="bg-surface-900 rounded-lg p-3">
-          <p class="text-xs text-surface-500 mb-1">Scenes</p>
-          <p id="scene-count" class="font-semibold text-sm">--</p>
+        <div class="stat">
+          <div class="stat-label">Scenes</div>
+          <div id="scene-count" class="stat-value">--</div>
         </div>
       </div>
     </div>
 
-    <div class="glass-card rounded-xl p-5">
-      <h2 class="text-sm font-semibold mb-4">Settings</h2>
-      <div class="space-y-4">
-        <div>
-          <label class="block text-xs font-medium text-surface-400 mb-1.5">Agent Token</label>
-          <input id="token" type="text" placeholder="Paste your token from the website"
-            class="w-full bg-surface-900 border border-surface-700 rounded-lg px-3 py-2 text-sm text-white placeholder-surface-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors">
-          <p class="text-[11px] text-surface-600 mt-1.5">Website &rarr; OBS Control &rarr; Add Connection (Agent) &rarr; Agent Setup. Saved automatically.</p>
+    <div class="card">
+      <h2>Settings</h2>
+      <div class="form-group">
+        <label class="field" for="token">Agent Token</label>
+        <input id="token" type="text" placeholder="Paste your token from the website">
+        <p class="hint">Website &rarr; OBS Control &rarr; Add Connection (Agent) &rarr; Agent Setup. Saved automatically.</p>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="field" for="obsPort">OBS Port</label>
+          <input id="obsPort" type="number" value="4455">
         </div>
-        <div class="grid grid-cols-3 gap-3">
-          <div class="col-span-1">
-            <label class="block text-xs font-medium text-surface-400 mb-1.5">OBS Host</label>
-            <input id="obsHost" type="text"
-              class="w-full bg-surface-900 border border-surface-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors">
+        <div class="form-group">
+          <label class="field" for="obsPassword">OBS Password</label>
+          <input id="obsPassword" type="password" placeholder="Optional">
+        </div>
+      </div>
+      <p class="hint" style="margin-bottom:14px;">OBS connection runs on 127.0.0.1 (this PC).</p>
+      <div class="form-group">
+        <div class="toggle-row">
+          <label for="startup">Start with Windows</label>
+          <div class="switch">
+            <input type="checkbox" id="startup">
+            <span class="slider"></span>
           </div>
-          <div>
-            <label class="block text-xs font-medium text-surface-400 mb-1.5">OBS Port</label>
-            <input id="obsPort" type="number"
-              class="w-full bg-surface-900 border border-surface-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors">
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-surface-400 mb-1.5">OBS Password</label>
-            <input id="obsPassword" type="password"
-              class="w-full bg-surface-900 border border-surface-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors">
-          </div>
         </div>
-        <button id="save-btn"
-          class="w-full bg-brand-600 hover:bg-brand-500 text-white rounded-lg py-2.5 text-sm font-semibold transition-colors">
-          <i class="fas fa-plug mr-2"></i>Save &amp; Connect
-        </button>
       </div>
+      <button id="save-btn" class="primary">Save &amp; Connect</button>
     </div>
 
-    <p class="text-center text-[11px] text-surface-600 mt-6">Settings are saved to a JSON file on this PC and reloaded on next launch.</p>
+    <p class="footer">Closing this window keeps the agent running in your system tray.<br>Version <span id="version">1.0.0</span></p>
   </div>
 
   <script src="renderer.js"></script>
