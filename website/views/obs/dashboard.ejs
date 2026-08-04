@@ -55,6 +55,11 @@
         </div>
         <p id="obs-conn-hint-<%= conn.id %>" class="hidden text-xs text-surface-500 mt-2 mb-2"></p>
 
+        <div id="obs-conn-warn-<%= conn.id %>" class="hidden mt-2 mb-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
+          <i class="fas fa-exclamation-triangle mr-1"></i>
+          <span id="obs-conn-warn-text-<%= conn.id %>"></span>
+        </div>
+
         <div id="obs-preview-<%= conn.id %>" class="hidden mb-5">
           <div class="relative bg-black rounded-lg overflow-hidden" style="aspect-ratio: 16/9;">
             <video id="obs-preview-video-<%= conn.id %>" autoplay muted playsinline
@@ -152,6 +157,26 @@
   }
 
   const connState = {};
+  function renderConnWarn(connId) {
+    const st = connState[connId];
+    const el = document.getElementById(`obs-conn-warn-${connId}`);
+    const txt = document.getElementById(`obs-conn-warn-text-${connId}`);
+    if (!el || !txt) return;
+    if (!st || st.obsConnected || !st.obsError) {
+      el.classList.add('hidden');
+      return;
+    }
+    const err = st.obsError || '';
+    let msg;
+    if (/ECONNREFUSED|ECONNRESET|EHOSTUNREACH|ETIMEDOUT/.test(err)) {
+      msg = 'Agent can\'t reach OBS. Enable the WebSocket Server in OBS (Tools \u2192 WebSocket Server Settings, port 4455) and make sure the agent\'s port/password match \u2014 then click Connect.';
+    } else {
+      msg = 'Agent couldn\'t connect to OBS: ' + err;
+    }
+    txt.textContent = msg;
+    el.classList.remove('hidden');
+  }
+
   function renderConnHint(connId) {
     const st = connState[connId];
     const el = document.getElementById(`obs-conn-hint-${connId}`);
@@ -172,7 +197,9 @@
   socket.on('obs-status', (data) => {
     const st = connState[data.connId] || (connState[data.connId] = {});
     st.obsConnected = data.connected;
+    if (data.connected) st.obsError = null;
     renderConnHint(data.connId);
+    renderConnWarn(data.connId);
     const statusTexts = document.querySelectorAll(`.obs-status-text[data-conn-id="${data.connId}"]`);
     statusTexts.forEach(el => {
       el.textContent = data.connected ? 'Connected' : 'Disconnected';
@@ -194,6 +221,7 @@
     const st = connState[data.connId] || (connState[data.connId] = {});
     st.agentOnline = data.online;
     renderConnHint(data.connId);
+    renderConnWarn(data.connId);
     const els = document.querySelectorAll(`.obs-agent-status[data-conn-id="${data.connId}"]`);
     els.forEach(el => {
       el.textContent = data.online ? 'Agent online' : 'Agent offline';
@@ -426,7 +454,9 @@
   }
 
   socket.on('obs-error', (data) => {
-    alert('OBS connection failed: ' + data.error);
+    const st = connState[data.connId] || (connState[data.connId] = {});
+    st.obsError = data.error;
+    renderConnWarn(data.connId);
     console.error('OBS connect error:', data.error);
   });
 
