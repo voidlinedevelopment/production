@@ -11,26 +11,37 @@
     <h2 class="text-lg font-semibold mb-4">Add Connection</h2>
     <form method="POST" action="/obs/<%= team.id %>/connections" class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
+        <label class="block text-sm font-medium text-surface-300 mb-2">Connection Type</label>
+        <select name="type" id="conn-type"
+          class="w-full bg-surface-900 border border-surface-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors">
+          <option value="direct">Direct (server connects to OBS)</option>
+          <option value="agent" selected>Agent (app on your PC)</option>
+        </select>
+      </div>
+      <div>
         <label class="block text-sm font-medium text-surface-300 mb-2">Connection Name</label>
         <input type="text" name="name" required placeholder="Main OBS"
           class="w-full bg-surface-900 border border-surface-700 rounded-lg px-4 py-2.5 text-white placeholder-surface-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors">
       </div>
-      <div>
+      <div id="host-field">
         <label class="block text-sm font-medium text-surface-300 mb-2">Host / IP</label>
         <input type="text" name="host" value="127.0.0.1" placeholder="127.0.0.1"
           class="w-full bg-surface-900 border border-surface-700 rounded-lg px-4 py-2.5 text-white placeholder-surface-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors">
       </div>
-      <div>
+      <div id="port-field">
         <label class="block text-sm font-medium text-surface-300 mb-2">Port</label>
         <input type="number" name="port" value="4455" placeholder="4455"
           class="w-full bg-surface-900 border border-surface-700 rounded-lg px-4 py-2.5 text-white placeholder-surface-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors">
       </div>
-      <div>
+      <div id="password-field">
         <label class="block text-sm font-medium text-surface-300 mb-2">Password</label>
         <input type="password" name="password" placeholder="Optional"
           class="w-full bg-surface-900 border border-surface-700 rounded-lg px-4 py-2.5 text-white placeholder-surface-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors">
       </div>
       <div class="md:col-span-2">
+        <p class="text-sm text-surface-400 mb-4" id="agent-hint">
+          Run the <b>Production OBS Agent</b> on the PC that runs OBS. After adding, copy its token to the agent's <code>.env</code> file. No open ports needed.
+        </p>
         <button type="submit" class="btn-primary px-6 py-2.5 rounded-xl text-white font-medium text-sm">
           <i class="fas fa-plus mr-2"></i>Add Connection
         </button>
@@ -49,12 +60,23 @@
         <div class="glass-card rounded-xl p-4 flex items-center gap-4">
           <div class="status-dot <%= conn.status === 'connected' ? 'status-online' : 'status-offline' %>"></div>
           <div class="flex-1 min-w-0">
-            <h3 class="font-semibold"><%= conn.name %></h3>
-            <p class="text-sm text-surface-400"><%= conn.host %>:<%= conn.port %></p>
+            <h3 class="font-semibold flex items-center gap-2">
+              <%= conn.name %>
+              <% if (conn.agent_token) { %>
+                <span class="text-xs px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400">Agent</span>
+              <% } %>
+            </h3>
+            <p class="text-sm text-surface-400"><%= conn.agent_token ? 'Production OBS Agent' : conn.host + ':' + conn.port %></p>
           </div>
           <span class="text-xs px-2 py-0.5 rounded-full <%= conn.status === 'connected' ? 'bg-green-500/20 text-green-400' : 'bg-surface-700 text-surface-400' %>">
             <%= conn.status %>
           </span>
+          <% if (conn.agent_token) { %>
+            <a href="/obs/<%= team.id %>/connections/<%= conn.id %>/token"
+              class="text-xs px-3 py-1.5 rounded-lg bg-surface-800 hover:bg-surface-700 text-surface-300 transition-colors">
+              <i class="fas fa-terminal mr-1"></i>Agent Setup
+            </a>
+          <% } %>
           <form method="POST" action="/obs/<%= team.id %>/connections/<%= conn.id %>/delete" onsubmit="return confirm('Remove this connection?')">
             <button type="submit" class="p-2 rounded-lg hover:bg-red-500/15 text-surface-500 hover:text-red-400 transition-colors">
               <i class="fas fa-trash text-sm"></i>
@@ -65,3 +87,16 @@
     </div>
   <% } %>
 </div>
+
+<script>
+  const typeSelect = document.getElementById('conn-type');
+  function updateType() {
+    const isAgent = typeSelect.value === 'agent';
+    document.getElementById('host-field').style.display = isAgent ? 'none' : '';
+    document.getElementById('port-field').style.display = isAgent ? 'none' : '';
+    document.getElementById('password-field').style.display = isAgent ? 'none' : '';
+    document.getElementById('agent-hint').style.display = isAgent ? '' : 'none';
+  }
+  typeSelect.addEventListener('change', updateType);
+  updateType();
+</script>

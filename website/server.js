@@ -14,7 +14,7 @@ const rateLimit = require('express-rate-limit');
 const methodOverride = require('method-override');
 const path = require('path');
 const fs = require('fs');
-const { getDatabase, initializeDatabase, getOne, runQuery } = require('../shared/database');
+const { getDatabase, initializeDatabase, getAll, getOne, runQuery } = require('../shared/database');
 
 const app = express();
 const server = http.createServer(app);
@@ -244,19 +244,129 @@ app.use((err, req, res, next) => {
 const obsService = require('./services/obsService');
 obsService.setIO(io);
 
+function agentOnline(connId) {
+  const room = io.sockets.adapter.rooms.get(`agent-${connId}`);
+  return room ? room.size > 0 : false;
+}
+
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
 
-  socket.on('join-team', (teamId) => {
+  socket.on('join-team', async (teamId) => {
     socket.join(`team-${teamId}`);
+    const agentConns = await getAll(
+      'SELECT id FROM obs_connections WHERE team_id = ? AND agent_token IS NOT NULL',
+      [teamId]
+    );
+    agentConns.forEach((c) => {
+      socket.emit('obs-agent-status', { connId: c.id, online: agentOnline(c.id) });
+    });
   });
 
   socket.on('leave-team', (teamId) => {
     socket.leave(`team-${teamId}`);
   });
 
+  socket.on('agent-auth', async (data) => {
+    const { token } = data || {};
+    const conn = await getOne('SELECT * FROM obs_connections WHERE agent_token = ?', [token]);
+    if (!conn) {
+      socket.emit('agent-auth-result', { ok: false, error: 'Invalid agent token' });
+      socket.disconnect();
+      return;
+    }
+    socket.agentConnId = conn.id;
+    socket.join(`agent-${conn.id}`);
+    socket.emit('agent-auth-result', { ok: true, connId: conn.id, name: conn.name });
+    io.to(`team-${conn.team_id}`).emit('obs-agent-status', { connId: conn.id, online: true });
+    console.log(`OBS Agent online for conn ${conn.id}`);
+  });
+
+  socket.on('agent-obs-status', async (data) => {
+    const connId = socket.agentConnId;
+    if (!connId) return;
+    const conn = await getOne('SELECT team_id FROM obs_connections WHERE id = ?', [connId]);
+    if (!conn) return;
+
+    const status = data.connected ? 'connected' : 'disconnected';
+    await runQuery('UPDATE obs_connections SET status = ? WHERE id = ?', [status, connId]);
+    const room = `team-${conn.team_id}`;
+    io.to(room).emit('obs-status', { connId, connected: data.connected });
+
+    if (data.connected && data.info) {
+      io.to(room).emit('obs-scene', { connId, scene: data.info.currentScene, scenes: data.info.scenes });
+      io.to(room).emit('obs-stream-status', { connId, streaming: data.info.streaming });
+      io.to(room).emit('obs-recording-status', { connId, recording: data.info.recording });
+      io.to(room).emit('obs-stats', { connId, fps: data.info.fps });
+    }
+    if (data.error) {
+      io.to(room).emit('obs-error', { connId, error: data.error });
+    }
+  });
+
+  socket.on('agent-obs-event', async (data) => {
+    const connId = socket.agentConnId;
+    if (!connId) return;
+    const conn = await getOne('SELECT team_id FROM obs_connections WHERE id = ?', [connId]);
+    if (!conn) return;
+
+    const room = `team-${conn.team_id}`;
+    switch (data.event) {
+      case 'CurrentProgramSceneChanged':
+        io.to(room).emit('obs-scene', { connId, scene: data.data.sceneName });
+        break;
+      case 'StreamStateChanged':
+        io.to(room).emit('obs-stream-status', { connId, streaming: data.data.outputActive });
+        break;
+      case 'RecordStateChanged':
+        io.to(room).emit('obs-recording-status', { connId, recording: data.data.outputActive });
+        break;
+    }
+  });
+
+  socket.on('agent-obs-result', async (data) => {
+    const connId = socket.agentConnId;
+    if (!connId) return;
+    const conn = await getOne('SELECT team_id FROM obs_connections WHERE id = ?', [connId]);
+    if (!conn) return;
+
+    const room = `team-${conn.team_id}`;
+    if (data.success) {
+      if (data.command === 'switchScene') {
+        io.to(room).emit('obs-scene', { connId, scene: data.scene });
+      } else if (data.command === 'startStream') {
+        io.to(room).emit('obs-stream-status', { connId, streaming: true });
+        await runQuery('INSERT INTO activity_logs (team_id, action) VALUES (?, ?)', [conn.team_id, 'Stream started']);
+      } else if (data.command === 'stopStream') {
+        io.to(room).emit('obs-stream-status', { connId, streaming: false });
+        await runQuery('INSERT INTO activity_logs (team_id, action) VALUES (?, ?)', [conn.team_id, 'Stream stopped']);
+      } else if (data.command === 'startRecording') {
+        io.to(room).emit('obs-recording-status', { connId, recording: true });
+      } else if (data.command === 'stopRecording') {
+        io.to(room).emit('obs-recording-status', { connId, recording: false });
+      }
+    } else {
+      io.to(room).emit('obs-error', { connId, error: data.error || 'OBS command failed' });
+    }
+  });
+
   socket.on('obs-connect', async (data) => {
     const { teamId, connId, host, port, password } = data;
+    const conn = await getOne('SELECT * FROM obs_connections WHERE id = ?', [connId]);
+
+    if (conn && conn.agent_token) {
+      if (agentOnline(connId)) {
+        io.to(`agent-${connId}`).emit('agent-obs-command', { connId, command: 'connect' });
+      } else {
+        io.to(`team-${teamId}`).emit('obs-status', { connId, connected: false });
+        io.to(`team-${teamId}`).emit('obs-error', {
+          connId,
+          error: 'OBS agent is offline. Run the agent app on the streaming PC and keep it open.'
+        });
+      }
+      return;
+    }
+
     const result = await obsService.connect(connId, host, port, password);
 
     if (result.success) {
@@ -294,6 +404,21 @@ io.on('connection', (socket) => {
 
   socket.on('obs-disconnect', async (data) => {
     const { teamId, connId } = data;
+    const conn = await getOne('SELECT * FROM obs_connections WHERE id = ?', [connId]);
+
+    if (conn && conn.agent_token) {
+      if (agentOnline(connId)) {
+        io.to(`agent-${connId}`).emit('agent-obs-command', { connId, command: 'disconnect' });
+      } else {
+        await runQuery(
+          "UPDATE obs_connections SET status = 'disconnected' WHERE id = ?",
+          [connId]
+        );
+        io.to(`team-${teamId}`).emit('obs-status', { connId, connected: false });
+      }
+      return;
+    }
+
     await obsService.disconnect(connId);
     await runQuery(
       "UPDATE obs_connections SET status = 'disconnected' WHERE id = ?",
@@ -304,6 +429,20 @@ io.on('connection', (socket) => {
 
   socket.on('obs-command', async (data) => {
     const { teamId, connId, command, scene } = data;
+    const conn = await getOne('SELECT * FROM obs_connections WHERE id = ?', [connId]);
+
+    if (conn && conn.agent_token) {
+      if (!agentOnline(connId)) {
+        io.to(`team-${teamId}`).emit('obs-error', {
+          connId,
+          error: 'OBS agent is offline. Run the agent app on the streaming PC and keep it open.'
+        });
+        return;
+      }
+      io.to(`agent-${connId}`).emit('agent-obs-command', { connId, command, scene });
+      return;
+    }
+
     let result;
 
     switch (command) {
@@ -349,6 +488,17 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
+    if (socket.agentConnId) {
+      const connId = socket.agentConnId;
+      getOne('SELECT team_id FROM obs_connections WHERE id = ?', [connId]).then((conn) => {
+        if (conn) {
+          runQuery("UPDATE obs_connections SET status = 'disconnected' WHERE id = ?", [connId]);
+          io.to(`team-${conn.team_id}`).emit('obs-agent-status', { connId, online: false });
+          io.to(`team-${conn.team_id}`).emit('obs-status', { connId, connected: false });
+        }
+      });
+      console.log(`OBS Agent offline for conn ${connId}`);
+    }
     console.log('Client disconnected:', socket.id);
   });
 });

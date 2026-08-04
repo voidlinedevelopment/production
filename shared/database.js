@@ -122,6 +122,7 @@ function initializeDatabase() {
       host TEXT NOT NULL DEFAULT '127.0.0.1',
       port INTEGER NOT NULL DEFAULT 4455,
       password TEXT,
+      agent_token TEXT,
       status TEXT DEFAULT 'disconnected',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE
@@ -194,6 +195,23 @@ function initializeDatabase() {
         insertPerm.run(perm);
       });
       insertPerm.finalize(() => {
+        migrate().then(resolve).catch(reject);
+      });
+    });
+  });
+}
+
+function migrate() {
+  return new Promise((resolve, reject) => {
+    db.all('PRAGMA table_info(obs_connections)', (err, cols) => {
+      if (err) return reject(err);
+      const hasAgentToken = cols.some((c) => c.name === 'agent_token');
+      if (hasAgentToken) return resolve();
+
+      db.run('ALTER TABLE obs_connections ADD COLUMN agent_token TEXT', (migrateErr) => {
+        if (migrateErr) {
+          console.error('Migration error:', migrateErr.message);
+        }
         resolve();
       });
     });
@@ -230,6 +248,7 @@ function getAll(sql, params = []) {
 module.exports = {
   getDatabase,
   initializeDatabase,
+  migrate,
   runQuery,
   getOne,
   getAll

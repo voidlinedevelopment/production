@@ -1,0 +1,14 @@
+{
+  "name": "production-obs-agent",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "obs-websocket-js": "^5.0.6",
+    "socket.io-client": "^4.7.4"
+  }
+}

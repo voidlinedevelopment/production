@@ -34,6 +34,11 @@
             </div>
           </div>
           <div class="flex items-center gap-3">
+            <% if (conn.agent_token) { %>
+              <span class="text-xs px-2 py-0.5 rounded-full bg-surface-800 text-surface-400 obs-agent-status" data-conn-id="<%= conn.id %>">
+                Agent offline
+              </span>
+            <% } %>
             <span class="status-dot <%= conn.status === 'connected' ? 'status-online' : 'status-offline' %>"></span>
             <span class="text-sm font-medium <%= conn.status === 'connected' ? 'text-green-400' : 'text-surface-500' %> obs-status-text" data-conn-id="<%= conn.id %>">
               <%= conn.status === 'connected' ? 'Connected' : 'Disconnected' %>
@@ -125,6 +130,14 @@
     const btns = document.querySelectorAll(`.obs-connect-btn[data-conn-id="${data.connId}"]`);
     btns.forEach(el => {
       el.textContent = data.connected ? 'Disconnect' : 'Connect';
+    });
+  });
+
+  socket.on('obs-agent-status', (data) => {
+    const els = document.querySelectorAll(`.obs-agent-status[data-conn-id="${data.connId}"]`);
+    els.forEach(el => {
+      el.textContent = data.online ? 'Agent online' : 'Agent offline';
+      el.className = `text-xs px-2 py-0.5 rounded-full ${data.online ? 'bg-green-500/20 text-green-400' : 'bg-surface-800 text-surface-400'} obs-agent-status`;
     });
   });
 

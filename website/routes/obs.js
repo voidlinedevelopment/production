@@ -1,4 +1,5 @@
 const express = require('express');
+const crypto = require('crypto');
 const router = express.Router();
 const { isAuthenticated } = require('../middleware/auth');
 const { teamAccess } = require('../middleware/teamAccess');
@@ -57,15 +58,46 @@ router.get('/:teamId/connections', isAuthenticated, teamAccess, checkPermission(
 
 router.post('/:teamId/connections', isAuthenticated, teamAccess, checkPermission('obs.control'), async (req, res) => {
   try {
-    const { name, host, port, password } = req.body;
-    await runQuery(
-      'INSERT INTO obs_connections (team_id, name, host, port, password) VALUES (?, ?, ?, ?, ?)',
-      [req.team.id, name, host || '127.0.0.1', port || 4455, password || '']
-    );
-    res.redirect(`/obs/${req.team.id}/connections`);
+    const { name, host, port, password, type } = req.body;
+
+    if (type === 'agent') {
+      const agentToken = crypto.randomBytes(24).toString('hex');
+      await runQuery(
+        'INSERT INTO obs_connections (team_id, name, host, port, password, agent_token) VALUES (?, ?, ?, ?, ?, ?)',
+        [req.team.id, name, 'agent', 0, '', agentToken]
+      );
+      res.redirect(`/obs/${req.team.id}/connections`);
+    } else {
+      await runQuery(
+        'INSERT INTO obs_connections (team_id, name, host, port, password) VALUES (?, ?, ?, ?, ?)',
+        [req.team.id, name, host || '127.0.0.1', port || 4455, password || '']
+      );
+      res.redirect(`/obs/${req.team.id}/connections`);
+    }
   } catch (err) {
     console.error(err);
     res.redirect(`/obs/${req.team.id}/connections?error=Failed to add connection`);
+  }
+});
+
+router.get('/:teamId/connections/:connId/token', isAuthenticated, teamAccess, checkPermission('obs.control'), async (req, res) => {
+  try {
+    const conn = await getOne(
+      'SELECT * FROM obs_connections WHERE id = ? AND team_id = ?',
+      [req.params.connId, req.team.id]
+    );
+    if (!conn || !conn.agent_token) {
+      return res.redirect(`/obs/${req.team.id}/connections`);
+    }
+
+    res.render('obs/agent', {
+      title: 'OBS Agent Setup',
+      team: req.team,
+      conn
+    });
+  } catch (err) {
+    console.error(err);
+    res.redirect(`/obs/${req.team.id}/connections`);
   }
 });
 
