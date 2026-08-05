@@ -3,6 +3,11 @@ const router = express.Router();
 const { getAll, getOne, runQuery } = require('../shared/database');
 const { getPlan } = require('../shared/plans');
 
+const PROTECTED_ADMIN_IDS = (process.env.PROTECTED_ADMIN_IDS || '1258620191890341921')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
 function isAuthenticated(req, res, next) {
   if (req.isAuthenticated()) return next();
   return res.redirect('/login?redirected=1');
@@ -138,7 +143,7 @@ router.post('/promo-codes/:id/delete', async (req, res) => {
 router.get('/admins', async (req, res) => {
   try {
     const admins = await getAll('SELECT id, discord_id, username, global_name, avatar, created_at FROM users WHERE is_admin = 1');
-    res.render('admins', { title: 'Admins', admins });
+    res.render('admins', { title: 'Admins', admins, protectedIds: PROTECTED_ADMIN_IDS });
   } catch (err) {
     console.error(err);
     res.status(500).render('error', { title: 'Error', message: 'Failed to load admins.' });
@@ -164,6 +169,10 @@ router.post('/admins/:id/demote', async (req, res) => {
   try {
     if (parseInt(req.params.id, 10) === req.user.id) {
       return res.redirect('/admins?error=You cannot demote yourself.');
+    }
+    const target = await getOne('SELECT discord_id FROM users WHERE id = ?', [req.params.id]);
+    if (target && PROTECTED_ADMIN_IDS.includes(String(target.discord_id))) {
+      return res.redirect('/admins?error=This user is protected and cannot be demoted.');
     }
     await runQuery('UPDATE users SET is_admin = 0 WHERE id = ?', [req.params.id]);
     res.redirect('/admins');
