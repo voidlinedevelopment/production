@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { isAuthenticated } = require('../middleware/auth');
 const { getAll, getOne } = require('../../shared/database');
+const { getPlan } = require('../../shared/plans');
+const { getUserPlan, BILLING_URL } = require('../services/planService');
 
 router.get('/', isAuthenticated, async (req, res) => {
   try {
@@ -40,6 +42,8 @@ router.get('/', isAuthenticated, async (req, res) => {
 
     const totalTeams = teams.length;
     const totalProductions = activeProductions.length;
+    const userPlanKey = await getUserPlan(req.user.id);
+    const userPlan = getPlan(userPlanKey);
 
     res.render('dashboard/index', {
       title: 'Dashboard',
@@ -47,7 +51,10 @@ router.get('/', isAuthenticated, async (req, res) => {
       activeProductions,
       recentActivity,
       totalTeams,
-      totalProductions
+      totalProductions,
+      userPlan,
+      userPlanKey,
+      billingUrl: BILLING_URL
     });
   } catch (err) {
     console.error('Dashboard error:', err);

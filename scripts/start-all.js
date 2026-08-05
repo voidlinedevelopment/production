@@ -52,7 +52,8 @@ function startDirect() {
   const processes = [
     { name: 'website', script: 'website/server.js', color: '36m' },
     { name: 'bot', script: 'bot/index.js', color: '32m' },
-    { name: 'tunnel', script: 'scripts/start-tunnel.js', color: '35m' }
+    { name: 'support', script: 'support/server.js', color: '35m' },
+    { name: 'tunnel', script: 'scripts/start-tunnel.js', color: '33m' }
   ];
 
   const children = processes.map(({ name, script, color }) => {

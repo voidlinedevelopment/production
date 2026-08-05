@@ -67,6 +67,10 @@
               <% } %>
             </h3>
             <p class="text-sm text-surface-400"><%= conn.agent_token ? 'Production OBS Agent' : conn.host + ':' + conn.port %></p>
+            <button onclick="copyText('conn-id-<%= conn.id %>')" class="text-xs text-surface-500 hover:text-brand-300 font-mono inline-flex items-center gap-1 mt-0.5">
+              <span id="conn-id-<%= conn.id %>" data-copy="<%= conn.public_id %>"><%= conn.public_id %></span>
+              <i class="fas fa-copy"></i>
+            </button>
           </div>
           <span class="text-xs px-2 py-0.5 rounded-full <%= conn.status === 'connected' ? 'bg-green-500/20 text-green-400' : 'bg-surface-700 text-surface-400' %>">
             <%= conn.status %>

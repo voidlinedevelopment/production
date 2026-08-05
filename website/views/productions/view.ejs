@@ -15,6 +15,14 @@
         <p class="text-surface-400"><%= production.description || 'No description' %></p>
       </div>
       <div class="flex gap-2">
+        <form method="POST" action="/productions/<%= team.id %>/<%= production.id %>/template" class="flex items-center gap-1">
+          <input type="text" name="name" placeholder="Save as template..."
+            class="bg-surface-900 border border-surface-700 rounded-lg px-2 py-1.5 text-xs text-white placeholder-surface-600 focus:outline-none focus:border-brand-500"
+            <%= templatesOk ? '' : 'disabled' %>>
+          <button type="submit" <%= templatesOk ? '' : 'disabled' %> title="Save as template" class="px-2 py-1.5 rounded-lg bg-surface-800 hover:bg-surface-700 text-xs transition-colors">
+            <i class="fas fa-copy"></i>
+          </button>
+        </form>
         <% if (production.status === 'draft') { %>
           <form method="POST" action="/productions/<%= team.id %>/<%= production.id %>/status">
             <input type="hidden" name="status" value="live">
@@ -33,6 +41,17 @@
       </div>
     </div>
   </div>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="rounded-xl p-4 mb-6 border border-red-500/30 bg-red-500/10 text-red-300 text-sm">
+      <i class="fas fa-exclamation-circle mr-2"></i><%= error %>
+    </div>
+  <% } %>
+  <% if (typeof success !== 'undefined' && success) { %>
+    <div class="rounded-xl p-4 mb-6 border border-green-500/30 bg-green-500/10 text-green-300 text-sm">
+      <i class="fas fa-check-circle mr-2"></i><%= success %>
+    </div>
+  <% } %>
 
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <div class="lg:col-span-2">

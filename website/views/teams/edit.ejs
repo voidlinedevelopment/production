@@ -6,6 +6,12 @@
     <h1 class="text-2xl font-bold">Edit Team</h1>
   </div>
 
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="rounded-xl p-4 mb-6 border border-red-500/30 bg-red-500/10 text-red-300 text-sm">
+      <i class="fas fa-exclamation-circle mr-2"></i><%= error %>
+    </div>
+  <% } %>
+
   <form method="POST" action="/teams/<%= team.id %>?_method=PUT" class="glass-card rounded-xl p-6 space-y-5">
     <input type="hidden" name="_method" value="PUT">
     <div>
@@ -17,6 +23,20 @@
       <label class="block text-sm font-medium text-surface-300 mb-2">Description</label>
       <textarea name="description" rows="3" maxlength="500"
         class="w-full bg-surface-900 border border-surface-700 rounded-lg px-4 py-2.5 text-white placeholder-surface-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors resize-none"><%= team.description || '' %></textarea>
+    </div>
+    <div>
+      <div class="flex items-center justify-between mb-2">
+        <label class="block text-sm font-medium text-surface-300">Logo URL</label>
+        <% if (!logoOk) { %>
+          <span class="text-xs px-2 py-0.5 rounded-full bg-surface-700 text-surface-400"><%= plan.name %> plan</span>
+        <% } else { %>
+          <span class="text-xs px-2 py-0.5 rounded-full bg-brand-600/20 text-brand-300">Creator+</span>
+        <% } %>
+      </div>
+      <input type="text" name="logo" value="<%= team.logo || '' %>" placeholder="https://example.com/logo.png"
+        class="w-full bg-surface-900 border border-surface-700 rounded-lg px-4 py-2.5 text-white placeholder-surface-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors"
+        <%= logoOk ? '' : 'disabled' %>>
+      <p class="text-xs text-surface-600 mt-1.5">Shown next to your team name.<% if (!logoOk) { %> Upgrade on the <a href="<%= billingUrl %>" target="_blank" rel="noopener" class="text-brand-400 hover:text-brand-300">billing page</a> to enable.<% } %></p>
     </div>
     <div class="flex items-center gap-3 pt-2">
       <button type="submit" class="btn-primary px-6 py-2.5 rounded-xl text-white font-medium text-sm">

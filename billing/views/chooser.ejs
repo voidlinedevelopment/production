@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> | Production</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: { 400: '#748ffc', 500: '#5c7cfa', 600: '#4c6ef5', 700: '#4263eb' },
+            surface: { 400: '#ced4da', 500: '#adb5bd', 600: '#868e96', 700: '#495057', 800: '#343a40', 900: '#212529', 950: '#0d1117' }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    body { background-color: #0d1117; color: #e6edf3; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+    .glass-card { background: rgba(22, 27, 34, 0.6); border: 1px solid rgba(48, 54, 61, 0.4); }
+    .btn-primary { background: linear-gradient(135deg, #4c6ef5, #3b5bdb); transition: all .2s ease; }
+    .btn-primary:hover { background: linear-gradient(135deg, #5c7cfa, #4263eb); box-shadow: 0 4px 15px rgba(76, 110, 245, .4); }
+  </style>
+</head>
+<body class="min-h-screen antialiased">
+  <div class="max-w-5xl mx-auto px-6 py-10">
+    <div class="flex items-center gap-2 mb-8">
+      <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center">
+        <i class="fa-solid fa-tower-broadcast text-white text-sm"></i>
+      </div>
+      <span class="text-lg font-bold" style="background:linear-gradient(135deg,#748ffc,#5c7cfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Production</span>
+    </div>
+
+    <h1 class="text-3xl font-bold mb-2">Plans & Billing</h1>
+    <p class="text-surface-500 mb-8">Select a team to manage its plan.</p>
+
+    <% if (teams.length === 0) { %>
+      <div class="glass-card rounded-xl p-8 text-center text-surface-500">
+        No teams found. Create a team first at the Production dashboard.
+      </div>
+    <% } else { %>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <% teams.forEach(t => { %>
+          <a href="/?team=<%= t.id %>" class="glass-card rounded-xl p-4 flex items-center gap-4 hover:border-brand-500/40 transition-colors">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center flex-shrink-0">
+              <% if (t.logo) { %>
+                <img src="<%= t.logo %>" alt="" class="w-12 h-12 rounded-xl object-cover">
+              <% } else { %>
+                <span class="text-white font-bold text-lg"><%= t.name.charAt(0).toUpperCase() %></span>
+              <% } %>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-semibold truncate"><%= t.name %></h3>
+              <p class="text-sm text-surface-500 truncate">Owned by <%= t.owner_name %></p>
+            </div>
+            <i class="fa-solid fa-chevron-right text-surface-600"></i>
+          </a>
+        <% }) %>
+      </div>
+    <% } %>
+  </div>
+</body>
+</html>

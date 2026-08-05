@@ -13,6 +13,29 @@
     </a>
   </div>
 
+  <% if (templates.length > 0) { %>
+    <div class="glass-card rounded-xl p-5 mb-6">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-semibold text-surface-300">Templates</h2>
+        <% if (!templatesOk) { %>
+          <span class="text-xs px-2 py-0.5 rounded-full bg-surface-700 text-surface-400">Studio+</span>
+        <% } %>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <% templates.forEach(tpl => { %>
+          <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-800 text-sm">
+            <i class="fas fa-copy text-brand-400 text-xs"></i><%= tpl.name %>
+            <form method="POST" action="/productions/<%= team.id %>/templates/<%= tpl.id %>/delete" class="inline">
+              <button type="submit" class="p-0.5 rounded hover:bg-red-500/15 text-surface-600 hover:text-red-400 transition-colors">
+                <i class="fas fa-times text-xs"></i>
+              </button>
+            </form>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+  <% } %>
+
   <% if (productions.length === 0) { %>
     <div class="glass-card rounded-xl p-12 text-center max-w-lg mx-auto">
       <div class="w-16 h-16 rounded-full bg-green-500/15 flex items-center justify-center mx-auto mb-4">

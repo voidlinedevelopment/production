@@ -183,6 +183,10 @@ app.use(passport.session());
 app.use((req, res, next) => {
   res.locals.user = req.user || null;
   res.locals.currentPath = req.path;
+  res.locals.billingUrl = process.env.BILLING_URL || '';
+  res.locals.supportUrl = process.env.SUPPORT_URL || '';
+  if (req.query.error) res.locals.error = req.query.error;
+  if (req.query.success) res.locals.success = req.query.success;
   next();
 });
 
@@ -203,6 +207,7 @@ const memberRoutes = require('./routes/members');
 const roleRoutes = require('./routes/roles');
 const settingsRoutes = require('./routes/settings');
 const agentRoutes = require('./routes/agent');
+const adminRoutes = require('./routes/admin');
 
 app.use('/auth', authRoutes);
 app.use('/dashboard', dashboardRoutes);
@@ -214,6 +219,7 @@ app.use('/members', memberRoutes);
 app.use('/roles', roleRoutes);
 app.use('/settings', settingsRoutes);
 app.use('/agent', agentRoutes);
+app.use('/admin', adminRoutes);
 
 // Home route
 app.get('/', (req, res) => {
@@ -224,8 +230,8 @@ app.get('/', (req, res) => {
 });
 
 // OBS overlay page (transparent lower-third rendered inside an OBS browser source)
-app.get('/overlay/:connId', async (req, res) => {
-  const conn = await getOne('SELECT id, name FROM obs_connections WHERE id = ?', [req.params.connId]);
+app.get('/overlay/:publicId', async (req, res) => {
+  const conn = await getOne('SELECT id, name FROM obs_connections WHERE public_id = ?', [req.params.publicId]);
   if (!conn) {
     return res.status(404).send('Not found');
   }
@@ -258,6 +264,7 @@ app.use((err, req, res, next) => {
 
 // Socket.IO + OBS Service
 const obsService = require('./services/obsService');
+const { deliverWebhooks } = require('./services/webhookService');
 obsService.setIO(io);
 
 function agentOnline(connId) {
@@ -329,6 +336,7 @@ io.on('connection', (socket) => {
     socket.join(`agent-${conn.id}`);
     socket.emit('agent-auth-result', { ok: true, connId: conn.id, name: conn.name });
     io.to(`team-${conn.team_id}`).emit('obs-agent-status', { connId: conn.id, online: true });
+    deliverWebhooks(conn.team_id, 'obs.connected', { connId: conn.id });
     console.log(`OBS Agent online for conn ${conn.id}`);
   });
 
@@ -443,12 +451,13 @@ io.on('connection', (socket) => {
   socket.on('overlay-set', async (data) => {
     const { connId, text, enabled } = data || {};
     if (!connId) return;
-    const conn = await getOne('SELECT team_id FROM obs_connections WHERE id = ?', [connId]);
+    const conn = await getOne('SELECT team_id, public_id FROM obs_connections WHERE id = ?', [connId]);
     if (!conn || !socket.teamIds.includes(conn.team_id)) return;
     await runQuery('UPDATE obs_connections SET overlay_text = ? WHERE id = ?', [text || '', connId]);
     io.to(`overlay-${connId}`).emit('overlay-text', { text: text || '' });
     const toTeam = (payload) => io.to(`team-${conn.team_id}`).emit('obs-overlay-result', payload);
-    const manualHint = `The overlay text is saved and live on the overlay page. If a browser source isn't showing it, add one in OBS: Sources -> Browser -> URL: https://production.ocrp.cc/overlay/${connId}`;
+    const baseUrl = process.env.WEBSITE_URL || process.env.CLOUDFLARE_HOSTNAME ? `https://${process.env.CLOUDFLARE_HOSTNAME}` : `http://localhost:${PORT}`;
+    const manualHint = `The overlay text is saved and live on the overlay page. If a browser source isn't showing it, add one in OBS: Sources -> Browser -> URL: ${baseUrl}/overlay/${conn.public_id}`;
     if (typeof enabled === 'boolean') {
       toTeam({ connId, success: true, stage: 'saved', enabled, text: text || '' });
       if (agentOnline(connId)) {
@@ -471,12 +480,15 @@ io.on('connection', (socket) => {
     switch (data.event) {
       case 'CurrentProgramSceneChanged':
         io.to(room).emit('obs-scene', { connId, scene: data.data.sceneName });
+        deliverWebhooks(conn.team_id, 'obs.scene_changed', { connId, scene: data.data.sceneName });
         break;
       case 'StreamStateChanged':
         io.to(room).emit('obs-stream-status', { connId, streaming: data.data.outputActive });
+        deliverWebhooks(conn.team_id, data.data.outputActive ? 'obs.stream_started' : 'obs.stream_stopped', { connId });
         break;
       case 'RecordStateChanged':
         io.to(room).emit('obs-recording-status', { connId, recording: data.data.outputActive });
+        deliverWebhooks(conn.team_id, data.data.outputActive ? 'obs.recording_started' : 'obs.recording_stopped', { connId });
         break;
     }
   });
@@ -491,12 +503,15 @@ io.on('connection', (socket) => {
     if (data.success) {
       if (data.command === 'switchScene') {
         io.to(room).emit('obs-scene', { connId, scene: data.scene });
+        deliverWebhooks(conn.team_id, 'obs.scene_changed', { connId, scene: data.scene });
       } else if (data.command === 'startStream') {
         io.to(room).emit('obs-stream-status', { connId, streaming: true });
         await runQuery('INSERT INTO activity_logs (team_id, action) VALUES (?, ?)', [conn.team_id, 'Stream started']);
+        deliverWebhooks(conn.team_id, 'obs.stream_started', { connId });
       } else if (data.command === 'stopStream') {
         io.to(room).emit('obs-stream-status', { connId, streaming: false });
         await runQuery('INSERT INTO activity_logs (team_id, action) VALUES (?, ?)', [conn.team_id, 'Stream stopped']);
+        deliverWebhooks(conn.team_id, 'obs.stream_stopped', { connId });
       } else if (data.command === 'startRecording') {
         io.to(room).emit('obs-recording-status', { connId, recording: true });
       } else if (data.command === 'stopRecording') {
@@ -579,6 +594,7 @@ io.on('connection', (socket) => {
         result = await obsService.switchScene(connId, scene);
         if (result.success) {
           io.to(`team-${teamId}`).emit('obs-scene', { connId, scene });
+          deliverWebhooks(teamId, 'obs.scene_changed', { connId, scene });
         }
         break;
       case 'startStream':
@@ -589,6 +605,7 @@ io.on('connection', (socket) => {
             'INSERT INTO activity_logs (team_id, action) VALUES (?, ?)',
             [teamId, 'Stream started']
           );
+          deliverWebhooks(teamId, 'obs.stream_started', { connId });
         }
         break;
       case 'stopStream':
@@ -599,6 +616,7 @@ io.on('connection', (socket) => {
             'INSERT INTO activity_logs (team_id, action) VALUES (?, ?)',
             [teamId, 'Stream stopped']
           );
+          deliverWebhooks(teamId, 'obs.stream_stopped', { connId });
         }
         break;
       case 'startRecording':

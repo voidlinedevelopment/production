@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> | Production</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background-color: #0d1117; color: #e6edf3; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-6">
+  <div class="max-w-md w-full text-center">
+    <div class="w-14 h-14 rounded-xl bg-amber-500/15 flex items-center justify-center mx-auto mb-4">
+      <i class="fa-solid fa-tower-broadcast text-amber-400 text-xl"></i>
+    </div>
+    <h1 class="text-xl font-bold mb-2">Checkout isn't ready yet</h1>
+    <p class="text-surface-500 text-sm mb-6">
+      <%= reason %>
+      Add <code class="text-surface-400">STRIPE_SECRET_KEY</code>, <code class="text-surface-400">STRIPE_PUBLISHABLE_KEY</code>
+      and the plan price IDs to the server <code class="text-surface-400">.env</code> file.
+    </p>
+    <p class="text-sm text-surface-400">Plan: <%= plan.name %> ($<%= plan.price %>/mo) &middot; Team: <%= team.name %></p>
+  </div>
+</body>
+</html>

@@ -1,10 +1,15 @@
 const { getOne, getAll, runQuery } = require('../../shared/database');
+const crypto = require('crypto');
+
+function publicId() {
+  return `tm_${crypto.randomBytes(8).toString('hex')}`;
+}
 
 const teamController = {
   async createTeam(userId, name, description) {
     const result = await runQuery(
-      'INSERT INTO teams (owner_id, name, description) VALUES (?, ?, ?)',
-      [userId, name, description || '']
+      'INSERT INTO teams (owner_id, name, description, public_id) VALUES (?, ?, ?, ?)',
+      [userId, name, description || '', publicId()]
     );
 
     const team = await getOne('SELECT * FROM teams WHERE id = ?', [result.id]);
@@ -131,11 +136,18 @@ const teamController = {
     );
   },
 
-  async updateTeam(teamId, name, description) {
-    await runQuery(
-      'UPDATE teams SET name = ?, description = ? WHERE id = ?',
-      [name, description || '', teamId]
-    );
+  async updateTeam(teamId, name, description, logo) {
+    if (logo !== undefined) {
+      await runQuery(
+        'UPDATE teams SET name = ?, description = ?, logo = ? WHERE id = ?',
+        [name, description || '', logo || null, teamId]
+      );
+    } else {
+      await runQuery(
+        'UPDATE teams SET name = ?, description = ? WHERE id = ?',
+        [name, description || '', teamId]
+      );
+    }
     return await getOne('SELECT * FROM teams WHERE id = ?', [teamId]);
   },
 

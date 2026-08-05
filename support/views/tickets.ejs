@@ -1,0 +1,48 @@
+<div class="max-w-5xl mx-auto">
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <a href="/" class="text-surface-400 hover:text-white text-sm inline-flex items-center gap-1 mb-4">
+        <i class="fas fa-arrow-left"></i> Back to Overview
+      </a>
+      <h1 class="text-2xl font-bold"><%= isAdmin ? 'All Tickets' : 'My Tickets' %></h1>
+    </div>
+    <a href="/tickets/new" class="btn-primary inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-medium">
+      <i class="fas fa-plus"></i>
+      Open a Ticket
+    </a>
+  </div>
+
+  <% if (tickets.length === 0) { %>
+    <div class="glass-card rounded-xl p-8 text-center">
+      <i class="fas fa-ticket-alt text-surface-600 text-3xl mb-3"></i>
+      <p class="text-surface-400">No tickets found.</p>
+    </div>
+  <% } else { %>
+    <div class="space-y-3">
+      <% tickets.forEach(ticket => { %>
+        <a href="/tickets/<%= ticket.id %>" class="glass-card rounded-xl p-4 flex items-center gap-4 block">
+          <div class="w-10 h-10 rounded-lg bg-brand-600/15 flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-ticket-alt text-brand-400 text-sm"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2">
+              <p class="font-medium truncate">#<%= ticket.id %> - <%= ticket.subject %></p>
+              <% if (isAdmin) { %>
+                <span class="text-xs px-2 py-0.5 rounded-full bg-surface-800 text-surface-400 flex-shrink-0">
+                  <%= ticket.global_name || ticket.username %>
+                </span>
+              <% } %>
+            </div>
+            <p class="text-xs text-surface-500">
+              <%= ticket.category %> &middot; <%= ticket.priority %> priority &middot; <%= new Date(ticket.updated_at).toLocaleString() %>
+            </p>
+          </div>
+          <span class="px-2 py-0.5 rounded-full text-xs font-medium
+            <%= ticket.status === 'closed' ? 'bg-surface-700 text-surface-400' : ticket.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-green-500/20 text-green-400' %>">
+            <%= ticket.status %>
+          </span>
+        </a>
+      <% }) %>
+    </div>
+  <% } %>
+</div>

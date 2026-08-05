@@ -3,6 +3,10 @@
     <div>
       <h1 class="text-2xl font-bold">Welcome back, <%= user.global_name || user.username %></h1>
       <p class="text-surface-400 mt-1">Here's what's happening with your productions.</p>
+      <div class="flex items-center gap-2 mt-2">
+        <span class="text-xs px-2.5 py-1 rounded-full bg-brand-600/20 text-brand-300 font-medium"><%= userPlan.name %> plan</span>
+        <a href="<%= billingUrl %>" target="_blank" rel="noopener" class="text-xs text-brand-400 hover:text-brand-300">Manage plan</a>
+      </div>
     </div>
     <a href="/teams/create" class="btn-primary inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-medium">
       <i class="fas fa-plus"></i>

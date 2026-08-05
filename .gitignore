@@ -11,3 +11,4 @@ logs/
 agent/dist/
 agent/node_modules/
 website/public/downloads/*.exe
+

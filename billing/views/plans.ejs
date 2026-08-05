@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> | Production</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: { 400: '#748ffc', 500: '#5c7cfa', 600: '#4c6ef5', 700: '#4263eb' },
+            surface: { 400: '#ced4da', 500: '#adb5bd', 600: '#868e96', 700: '#495057', 800: '#343a40', 900: '#212529', 950: '#0d1117' }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    body { background-color: #0d1117; color: #e6edf3; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+    .glass-card { background: rgba(22, 27, 34, 0.6); border: 1px solid rgba(48, 54, 61, 0.4); }
+    .btn-primary { background: linear-gradient(135deg, #4c6ef5, #3b5bdb); transition: all .2s ease; }
+    .btn-primary:hover { background: linear-gradient(135deg, #5c7cfa, #4263eb); box-shadow: 0 4px 15px rgba(76, 110, 245, .4); }
+  </style>
+</head>
+<body class="min-h-screen antialiased">
+  <div class="max-w-6xl mx-auto px-6 py-10">
+    <div class="flex items-center gap-2 mb-8">
+      <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center">
+        <i class="fa-solid fa-tower-broadcast text-white text-sm"></i>
+      </div>
+      <span class="text-lg font-bold" style="background:linear-gradient(135deg,#748ffc,#5c7cfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Production</span>
+    </div>
+
+    <div class="text-center mb-10">
+      <h1 class="text-3xl font-bold mb-2">Simple pricing</h1>
+      <p class="text-surface-500">Start free. Upgrade as your team grows.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <% plans.forEach(p => { %>
+        <div class="glass-card rounded-xl p-6 flex flex-col <%= p.key === 'studio' ? 'ring-2 ring-brand-500' : '' %>">
+          <div class="flex items-center justify-between mb-1">
+            <h2 class="text-lg font-semibold"><%= p.name %></h2>
+            <% if (p.key === 'studio') { %>
+              <span class="text-xs px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-400 font-medium">Popular</span>
+            <% } %>
+          </div>
+          <p class="text-sm text-surface-500 mb-4"><%= p.blurb %></p>
+          <p class="text-3xl font-bold mb-1"><%= p.priceLabel %><span class="text-sm text-surface-500 font-normal">/mo</span></p>
+          <p class="text-xs text-surface-600 mb-5">per team</p>
+          <ul class="flex-1 space-y-2 mb-6">
+            <% p.features.forEach(f => { %>
+              <li class="flex items-start gap-2 text-sm">
+                <i class="fa-solid fa-check text-green-400 mt-0.5"></i>
+                <span class="text-surface-300"><%= f %></span>
+              </li>
+            <% }) %>
+          </ul>
+          <% if (p.key === 'free') { %>
+            <span class="block text-center px-4 py-2.5 rounded-xl bg-surface-800 text-surface-300 text-sm font-medium">Current</span>
+          <% } else { %>
+            <a href="<%= checkoutUrl %>/?plan=<%= p.key %>" class="btn-primary block text-center px-4 py-2.5 rounded-xl text-white text-sm font-medium">
+              Choose <%= p.name %>
+            </a>
+          <% } %>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+</body>
+</html>

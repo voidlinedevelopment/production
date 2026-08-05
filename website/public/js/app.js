@@ -140,3 +140,33 @@ async function apiRequest(url, options = {}) {
 function confirmDelete(message = 'Are you sure you want to delete this?') {
   return confirm(message);
 }
+
+// Copy to clipboard
+function copyText(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const text = el.dataset.copy !== undefined ? el.dataset.copy : el.textContent;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text.trim()).then(() => {
+      showToast('Copied to clipboard!', 'success');
+    }).catch(() => fallbackCopy(text));
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text.trim();
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
+    showToast('Copied to clipboard!', 'success');
+  } catch (e) {
+    showToast('Could not copy automatically.', 'error');
+  }
+  ta.remove();
+}

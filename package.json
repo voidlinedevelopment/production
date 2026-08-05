@@ -10,6 +10,7 @@
     "web": "node website/server.js",
     "bot": "node bot/index.js",
     "tunnel": "node scripts/start-tunnel.js",
+    "stripe:prices": "node scripts/auto-stripe-prices.js",
     "pm2:start": "pm2 start ecosystem.config.js",
     "pm2:stop": "pm2 stop all",
     "pm2:save": "pm2 save",
@@ -32,6 +33,7 @@
     "helmet": "^7.1.0",
     "compression": "^1.7.4",
     "morgan": "^1.10.0",
-    "express-rate-limit": "^7.1.5"
+    "express-rate-limit": "^7.1.5",
+    "stripe": "^16.12.0"
   }
 }

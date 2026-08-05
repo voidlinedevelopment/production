@@ -1,0 +1,75 @@
+<div class="max-w-4xl mx-auto">
+  <div class="mb-8">
+    <a href="/admin" class="text-surface-400 hover:text-white text-sm inline-flex items-center gap-1 mb-4">
+      <i class="fas fa-arrow-left"></i> Back to Admin
+    </a>
+    <h1 class="text-2xl font-bold">Admins</h1>
+    <p class="text-surface-400 mt-1">Admins get the Studio plan for free and access to this dashboard.</p>
+  </div>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="rounded-xl p-4 mb-6 border border-red-500/30 bg-red-500/10 text-red-300 text-sm">
+      <i class="fas fa-exclamation-circle mr-2"></i><%= error %>
+    </div>
+  <% } %>
+  <% if (typeof success !== 'undefined' && success) { %>
+    <div class="rounded-xl p-4 mb-6 border border-green-500/30 bg-green-500/10 text-green-300 text-sm">
+      <i class="fas fa-check-circle mr-2"></i><%= success %>
+    </div>
+  <% } %>
+
+  <form method="POST" action="/admin/admins/promote" class="glass-card rounded-xl p-6 mb-8">
+    <h2 class="text-lg font-semibold mb-4">Promote User to Admin</h2>
+    <div class="flex gap-3">
+      <input type="text" name="discord_id" required placeholder="Discord user ID"
+        class="flex-1 bg-surface-900 border border-surface-700 rounded-lg px-4 py-2.5 text-white placeholder-surface-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors">
+      <button type="submit" class="btn-primary px-6 py-2.5 rounded-xl text-white font-medium text-sm">
+        <i class="fas fa-user-shield mr-2"></i>Promote
+      </button>
+    </div>
+    <p class="text-xs text-surface-600 mt-2">Tip: users listed in ADMIN_DISCORD_IDS in .env are auto-promoted on server start.</p>
+  </form>
+
+  <div class="glass-card rounded-xl overflow-hidden">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-left text-xs text-surface-500 border-b border-surface-700/50">
+          <th class="py-3 px-4">User</th>
+          <th class="py-3 px-4">Discord ID</th>
+          <th class="py-3 px-4">Admin Since</th>
+          <th class="py-3 px-4 text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% admins.forEach(admin => { %>
+          <tr class="border-b border-surface-800/50">
+            <td class="py-3 px-4">
+              <div class="flex items-center gap-3">
+                <% if (admin.avatar) { %>
+                  <img src="https://cdn.discordapp.com/avatars/<%= admin.discord_id %>/<%= admin.avatar %>.png?size=32" alt="" class="w-8 h-8 rounded-full">
+                <% } else { %>
+                  <div class="w-8 h-8 rounded-full bg-surface-700 flex items-center justify-center text-xs font-bold">
+                    <%= admin.username.charAt(0).toUpperCase() %>
+                  </div>
+                <% } %>
+                <div>
+                  <p class="font-medium"><%= admin.global_name || admin.username %></p>
+                  <p class="text-xs text-surface-500">@<%= admin.username %></p>
+                </div>
+              </div>
+            </td>
+            <td class="py-3 px-4 font-mono text-xs text-surface-500"><%= admin.discord_id %></td>
+            <td class="py-3 px-4 text-surface-500"><%= new Date(admin.created_at).toLocaleDateString() %></td>
+            <td class="py-3 px-4 text-right">
+              <form method="POST" action="/admin/admins/<%= admin.id %>/demote" onsubmit="return confirm('Demote this admin?')">
+                <button type="submit" class="px-3 py-1.5 rounded-lg bg-red-500/15 hover:bg-red-500/25 text-red-400 text-xs font-medium transition-colors">
+                  <i class="fas fa-user-minus mr-1"></i>Demote
+                </button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>

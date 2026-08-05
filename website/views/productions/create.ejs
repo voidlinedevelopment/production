@@ -36,6 +36,25 @@
           class="w-full bg-surface-900 border border-surface-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors">
       </div>
     </div>
+    <div>
+      <div class="flex items-center justify-between mb-2">
+        <label class="block text-sm font-medium text-surface-300">Start from Template</label>
+        <% if (!templatesOk) { %>
+          <span class="text-xs px-2 py-0.5 rounded-full bg-surface-700 text-surface-400">Studio+ feature</span>
+        <% } %>
+      </div>
+      <% if (templates.length > 0) { %>
+        <select name="template_id"
+          class="w-full bg-surface-900 border border-surface-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors">
+          <option value="">No template (blank rundown)</option>
+          <% templates.forEach(tpl => { %>
+            <option value="<%= tpl.id %>"><%= tpl.name %></option>
+          <% }) %>
+        </select>
+      <% } else { %>
+        <p class="text-xs text-surface-600">No templates yet. Open a production and click "Save as Template" to create one.<% if (!templatesOk) { %> Requires Studio+.<% } %></p>
+      <% } %>
+    </div>
     <div class="flex items-center gap-3 pt-2">
       <button type="submit" class="btn-primary px-6 py-2.5 rounded-xl text-white font-medium text-sm">
         <i class="fas fa-plus mr-2"></i>Create Production

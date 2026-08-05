@@ -1,0 +1,84 @@
+<div class="max-w-4xl mx-auto">
+  <div class="mb-6">
+    <a href="/tickets" class="text-surface-400 hover:text-white text-sm inline-flex items-center gap-1 mb-4">
+      <i class="fas fa-arrow-left"></i> Back to Tickets
+    </a>
+    <div class="flex items-center justify-between flex-wrap gap-3">
+      <div>
+        <h1 class="text-2xl font-bold">#<%= ticket.id %> - <%= ticket.subject %></h1>
+        <p class="text-surface-400 text-sm mt-1">
+          <%= ticket.category %> &middot; <%= ticket.priority %> priority
+          <% if (isAdmin) { %>
+            &middot; <%= owner.global_name || owner.username %> (<%= ownerTier.tier %> support)
+          <% } %>
+        </p>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="px-2 py-0.5 rounded-full text-xs font-medium
+          <%= ticket.status === 'closed' ? 'bg-surface-700 text-surface-400' : ticket.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-green-500/20 text-green-400' %>">
+          <%= ticket.status %>
+        </span>
+        <% if (ticket.status === 'closed') { %>
+          <form method="POST" action="/tickets/<%= ticket.id %>/status">
+            <button type="submit" name="status" value="open" class="px-3 py-1.5 rounded-lg bg-surface-800 hover:bg-surface-700 text-sm font-medium transition-colors">
+              <i class="fas fa-undo mr-1"></i> Reopen
+            </button>
+          </form>
+        <% } else { %>
+          <form method="POST" action="/tickets/<%= ticket.id %>/status" onsubmit="return confirm('Close this ticket?')">
+            <button type="submit" name="status" value="closed" class="px-3 py-1.5 rounded-lg bg-red-500/15 hover:bg-red-500/25 text-red-400 text-sm font-medium transition-colors">
+              <i class="fas fa-check mr-1"></i> Close
+            </button>
+          </form>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <div class="space-y-4 mb-8">
+    <% messages.forEach(msg => { %>
+      <div class="glass-card rounded-xl p-4 <%= msg.author_type === 'staff' ? 'border-brand-500/30' : '' %>">
+        <div class="flex items-center gap-3 mb-3">
+          <% if (msg.avatar) { %>
+            <img src="https://cdn.discordapp.com/avatars/<%= msg.discord_id %>/<%= msg.avatar %>.png?size=32" alt="" class="w-8 h-8 rounded-full">
+          <% } else { %>
+            <div class="w-8 h-8 rounded-full bg-surface-700 flex items-center justify-center text-sm font-bold">
+              <%= (msg.global_name || msg.username || 'U').charAt(0).toUpperCase() %>
+            </div>
+          <% } %>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium truncate">
+              <%= msg.author_type === 'staff' ? 'Support Team' : (msg.global_name || msg.username) %>
+              <% if (msg.author_type === 'staff') { %>
+                <span class="ml-2 text-xs px-1.5 py-0.5 rounded bg-brand-600/20 text-brand-300">Staff</span>
+              <% } %>
+            </p>
+            <p class="text-xs text-surface-500"><%= new Date(msg.created_at).toLocaleString() %></p>
+          </div>
+        </div>
+        <p class="text-sm whitespace-pre-wrap text-surface-200"><%= msg.body %></p>
+      </div>
+    <% }) %>
+  </div>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="rounded-xl p-4 mb-6 border border-red-500/30 bg-red-500/10 text-red-300 text-sm">
+      <i class="fas fa-exclamation-circle mr-2"></i><%= error %>
+    </div>
+  <% } %>
+
+  <% if (canReply) { %>
+    <form method="POST" action="/tickets/<%= ticket.id %>/reply" class="glass-card rounded-xl p-5">
+      <label class="block text-sm font-medium text-surface-300 mb-2">Add a reply</label>
+      <textarea name="body" rows="4" required maxlength="5000" placeholder="Type your reply..."
+        class="w-full bg-surface-900 border border-surface-700 rounded-lg px-4 py-2.5 text-white placeholder-surface-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors resize-none mb-3"></textarea>
+      <button type="submit" class="btn-primary px-6 py-2.5 rounded-xl text-white font-medium text-sm">
+        <i class="fas fa-paper-plane mr-2"></i>Send Reply
+      </button>
+    </form>
+  <% } else { %>
+    <div class="glass-card rounded-xl p-5 text-center text-surface-500 text-sm">
+      This ticket is closed. Reopen it to continue the conversation.
+    </div>
+  <% } %>
+</div>
