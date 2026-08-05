@@ -31,12 +31,12 @@
       </div>
       <div>
         <label class="block text-sm font-medium text-surface-300 mb-2">Priority</label>
-        <select name="priority"
-          class="w-full bg-surface-900 border border-surface-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-brand-500 transition-colors">
-          <% priorities.forEach(p => { %>
-            <option value="<%= p %>"><%= p %></option>
-          <% }) %>
-        </select>
+        <div class="w-full bg-surface-900 border border-surface-700 rounded-lg px-4 py-2.5 text-white flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full <%= tier.priority === 'Urgent' ? 'bg-red-400' : tier.priority === 'High' ? 'bg-orange-400' : tier.priority === 'Medium' ? 'bg-yellow-400' : 'bg-surface-500' %>"></span>
+          <span class="font-medium"><%= tier.priority %></span>
+          <span class="text-xs text-surface-500 ml-auto">Auto-assigned from your <%= tier.tier %> plan</span>
+        </div>
+        <p class="text-xs text-surface-500 mt-1.5"><%= tier.responseTime %></p>
       </div>
     </div>
     <div>

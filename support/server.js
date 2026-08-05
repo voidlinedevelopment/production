@@ -26,6 +26,7 @@ const ADMIN_IDS = (process.env.SUPPORT_ADMIN_IDS || '')
 const CATEGORIES = ['Billing', 'Technical', 'Feature Request', 'Account', 'Other'];
 const PRIORITIES = ['Low', 'Medium', 'High', 'Urgent'];
 const TIER_NAMES = { free: 'Community', creator: 'Priority', studio: 'Priority', enterprise: 'Dedicated' };
+const TIER_PRIORITY = { free: 'Low', creator: 'Medium', studio: 'High', enterprise: 'Urgent' };
 const TIER_RESPONSE = {
   free: 'Community support is answered as soon as possible, usually within 2-3 days.',
   creator: 'Priority support is answered within 24 hours.',
@@ -170,6 +171,8 @@ app.use((req, res, next) => {
   res.locals.user = req.user || null;
   res.locals.currentPath = req.path;
   res.locals.websiteUrl = WEBSITE_URL;
+  if (req.query.error) res.locals.error = req.query.error;
+  if (req.query.success) res.locals.success = req.query.success;
   next();
 });
 
@@ -197,6 +200,7 @@ async function supportTier(userId) {
     planKey: best,
     planName: getPlan(best).name,
     tier: TIER_NAMES[best],
+    priority: TIER_PRIORITY[best],
     responseTime: TIER_RESPONSE[best]
   };
 }
@@ -230,19 +234,26 @@ app.get('/tickets', isAuthenticated, async (req, res) => {
   }
 });
 
-app.get('/tickets/new', isAuthenticated, (req, res) => {
-  res.render('new', { title: 'Open a Ticket', categories: CATEGORIES, priorities: req.query.enterprise === '1' ? PRIORITIES : PRIORITIES.slice(0, 3) });
+app.get('/tickets/new', isAuthenticated, async (req, res) => {
+  try {
+    const tier = await supportTier(req.user.id);
+    res.render('new', { title: 'Open a Ticket', categories: CATEGORIES, tier });
+  } catch (err) {
+    console.error(err);
+    res.status(500).render('error', { title: 'Error', message: 'Failed to load new ticket form.' });
+  }
 });
 
 app.post('/tickets/new', isAuthenticated, async (req, res) => {
   try {
-    const { subject, category, priority, body } = req.body;
+    const { subject, category, body } = req.body;
     if (!subject || !body) {
       return res.redirect('/tickets/new?error=Subject and message are required');
     }
+    const tier = await supportTier(req.user.id);
     const ticket = await runQuery(
       'INSERT INTO support_tickets (user_id, subject, category, priority) VALUES (?, ?, ?, ?)',
-      [req.user.id, subject.trim(), CATEGORIES.includes(category) ? category : 'Other', PRIORITIES.includes(priority) ? priority : 'Low']
+      [req.user.id, subject.trim(), CATEGORIES.includes(category) ? category : 'Other', tier.priority]
     );
     await runQuery(
       'INSERT INTO support_ticket_messages (ticket_id, user_id, author_type, body) VALUES (?, ?, ?, ?)',
