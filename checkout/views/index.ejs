@@ -82,16 +82,10 @@
         <div id="checkout-error"></div>
 
         <div class="space-y-5">
-          <% if (ownerEmail) { %>
-            <div>
-              <label class="block text-sm font-medium text-surface-400 mb-1.5">Email</label>
-              <div class="flex items-center gap-2 text-sm text-surface-300 bg-surface-900 border border-surface-700 rounded-xl px-4 py-2.5">
-                <i class="fa-solid fa-envelope text-surface-600"></i>
-                <span><%= ownerEmail %></span>
-                <span class="ml-auto text-xs text-surface-500">from your account</span>
-              </div>
-            </div>
-          <% } %>
+          <div>
+            <label class="block text-sm font-medium text-surface-400 mb-1.5">Email</label>
+            <div id="contact-details-element" class="bg-surface-900 border border-surface-700 rounded-xl p-3"></div>
+          </div>
 
           <div>
             <label class="block text-sm font-medium text-surface-400 mb-1.5">Promo code</label>
@@ -161,25 +155,25 @@
 
     const checkout = stripe.initCheckoutElementsSdk({
       clientSecret: '<%= clientSecret %>',
-      elementsOptions: { appearance }
+      elementsOptions: { appearance },
+      <% if (ownerEmail) { %>defaultValues: { email: '<%= ownerEmail %>' },<% } %>
     });
 
     let actions = null;
 
-    const fmt = (cents) => '$' + (cents / 100).toFixed(2);
-
     function updateSummary(session) {
-      const discount = session.total_details ? session.total_details.amount_discount : 0;
-      const subtotal = session.amount_subtotal != null ? session.amount_subtotal : session.amount_total + discount;
-      document.getElementById('line-total').textContent = fmt(subtotal);
+      const t = session.total;
+      if (!t) return;
+      document.getElementById('line-total').textContent = t.subtotal ? t.subtotal.amount : (t.total ? t.total.amount : '');
+      const discount = t.discount ? t.discount.minorUnitsAmount : 0;
       const row = document.getElementById('discount-row');
       if (discount > 0) {
         row.style.display = 'flex';
-        document.getElementById('discount-amount').textContent = '-' + fmt(discount);
+        document.getElementById('discount-amount').textContent = '-' + (t.discount.amount || '');
       } else {
         row.style.display = 'none';
       }
-      document.getElementById('total-amount').textContent = fmt(session.amount_total);
+      document.getElementById('total-amount').textContent = t.total ? t.total.amount : '';
     }
 
     checkout.on('change', (session) => updateSummary(session));
@@ -194,6 +188,9 @@
 
     const paymentElement = checkout.createPaymentElement({ layout: 'tabs' });
     paymentElement.mount('#payment-element');
+
+    const contactDetails = checkout.createContactDetailsElement();
+    contactDetails.mount('#contact-details-element');
 
     document.getElementById('promo-apply').addEventListener('click', async () => {
       const input = document.getElementById('promo-input');

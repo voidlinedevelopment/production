@@ -65,7 +65,6 @@ app.get('/', async (req, res) => {
       client_reference_id: String(teamId),
       metadata: { teamId: String(teamId), plan: plan.key },
       subscription_data: { metadata: { teamId: String(teamId), plan: plan.key } },
-      customer_email: (owner && owner.email) || undefined,
       allow_promotion_codes: true,
       return_url: `${BILLING_URL}/?team=${teamId}&success=1`
     });
