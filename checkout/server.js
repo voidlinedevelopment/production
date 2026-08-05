@@ -60,7 +60,7 @@ app.get('/', async (req, res) => {
 
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
-      ui_mode: 'elements',
+      ui_mode: 'custom',
       line_items: [{ price: priceId, quantity: 1 }],
       client_reference_id: String(teamId),
       metadata: { teamId: String(teamId), plan: plan.key },
