@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= plan.name %> plan | Production</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: { 400: '#748ffc', 500: '#5c7cfa', 600: '#4c6ef5', 700: '#4263eb' },
+            surface: {
+              500: '#adb5bd', 600: '#868e96', 700: '#495057', 800: '#343a40',
+              900: '#212529', 950: '#0d1117'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    body { background-color: #0d1117; color: #e6edf3; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+    .glass-card { background: rgba(22, 27, 34, 0.6); border: 1px solid rgba(48, 54, 61, 0.4); }
+    .btn-primary { background: linear-gradient(135deg, #4c6ef5, #3b5bdb); transition: all .2s ease; }
+    .btn-primary:hover { background: linear-gradient(135deg, #5c7cfa, #4263eb); box-shadow: 0 4px 15px rgba(76, 110, 245, .4); }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-6 antialiased">
+  <div class="max-w-md w-full">
+    <div class="flex items-center gap-2 mb-6 justify-center">
+      <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center">
+        <i class="fa-solid fa-tower-broadcast text-white text-sm"></i>
+      </div>
+      <span class="text-lg font-bold" style="background:linear-gradient(135deg,#748ffc,#5c7cfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Production</span>
+    </div>
+    <div class="glass-card rounded-xl p-8 text-center">
+      <div class="w-14 h-14 rounded-xl bg-emerald-500/15 flex items-center justify-center mx-auto mb-4">
+        <i class="fa-solid fa-circle-check text-emerald-400 text-xl"></i>
+      </div>
+      <h1 class="text-xl font-bold mb-2">You're on the Free plan</h1>
+      <p class="text-surface-500 text-sm mb-6">
+        <span class="text-surface-400 font-medium"><%= team.name %></span> is set up on the Free plan
+        ($<%= plan.price %>/mo) — no payment needed. Ready to go!
+      </p>
+      <a href="<%= billingUrl %>/?team=<%= team.id %>" class="btn-primary inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-white font-medium text-sm">
+        <i class="fa-solid fa-arrow-right text-xs"></i>
+        Go to billing
+      </a>
+    </div>
+  </div>
+</body>
+</html>

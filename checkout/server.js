@@ -2,7 +2,7 @@ require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') }
 
 const express = require('express');
 const path = require('path');
-const { initializeDatabase, getOne } = require('../shared/database');
+const { initializeDatabase, getOne, upsertSubscription } = require('../shared/database');
 const { PLANS, getPlan } = require('../shared/plans');
 
 const app = express();
@@ -49,6 +49,11 @@ app.get('/', async (req, res) => {
       message: "We couldn't find that team. Please pick a team first, then head back to billing.",
       backUrl: BILLING_URL
     });
+  }
+
+  if (plan.key === 'free') {
+    await upsertSubscription({ teamId, plan: 'free', status: 'active' });
+    return res.render('free-confirmed', { team, plan, billingUrl: BILLING_URL });
   }
 
   if (!stripe || !PUBLISHABLE_KEY) {
