@@ -27,6 +27,13 @@
     .glass-card { background: rgba(22, 27, 34, 0.6); border: 1px solid rgba(48, 54, 61, 0.4); }
     .btn-primary { background: linear-gradient(135deg, #4c6ef5, #3b5bdb); transition: all .2s ease; }
     .btn-primary:hover { background: linear-gradient(135deg, #5c7cfa, #4263eb); box-shadow: 0 4px 15px rgba(76, 110, 245, .4); }
+    .btn-primary:disabled { opacity: .6; cursor: not-allowed; box-shadow: none; }
+    .field-input {
+      width: 100%; background: #0d1117; border: 1px solid #343a40; border-radius: .75rem;
+      padding: .65rem 1rem; color: #e6edf3; font-size: .875rem; transition: all .2s ease;
+    }
+    .field-input:focus { outline: none; border-color: #5c7cfa; box-shadow: 0 0 0 1px #5c7cfa; }
+    .field-input::placeholder { color: #495057; }
   </style>
 </head>
 <body class="min-h-screen antialiased">
@@ -71,11 +78,63 @@
 
       <div class="glass-card rounded-xl p-6 h-fit">
         <h2 class="text-lg font-semibold mb-4">Payment details</h2>
-        <div id="checkout"></div>
-        <p class="text-xs text-surface-500 mt-4 flex items-center gap-1.5">
-          <i class="fa-solid fa-lock text-surface-600"></i>
-          Secured by Stripe. Payments are billed monthly and can be managed from your billing page.
-        </p>
+
+        <div id="checkout-error"></div>
+
+        <div class="space-y-5">
+          <% if (ownerEmail) { %>
+            <div>
+              <label class="block text-sm font-medium text-surface-400 mb-1.5">Email</label>
+              <div class="flex items-center gap-2 text-sm text-surface-300 bg-surface-900 border border-surface-700 rounded-xl px-4 py-2.5">
+                <i class="fa-solid fa-envelope text-surface-600"></i>
+                <span><%= ownerEmail %></span>
+                <span class="ml-auto text-xs text-surface-500">from your account</span>
+              </div>
+            </div>
+          <% } %>
+
+          <div>
+            <label class="block text-sm font-medium text-surface-400 mb-1.5">Promo code</label>
+            <div class="flex gap-2">
+              <input type="text" id="promo-input" class="field-input" placeholder="Enter a promo code" autocomplete="off">
+              <button type="button" id="promo-apply" class="btn-primary px-4 rounded-xl text-white text-sm font-medium flex-shrink-0">
+                Apply
+              </button>
+            </div>
+            <p id="promo-status" class="text-xs mt-1.5 text-surface-500"></p>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-surface-400 mb-1.5">Payment method</label>
+            <div id="payment-element" class="bg-surface-900 border border-surface-700 rounded-xl p-3"></div>
+          </div>
+
+          <div class="border-t border-surface-700/60 pt-4 space-y-2 text-sm">
+            <div class="flex justify-between text-surface-500">
+              <span>Subtotal</span>
+              <span id="line-total"><%= plan.priceLabel %></span>
+            </div>
+            <div class="flex justify-between text-green-400" id="discount-row" style="display:none;">
+              <span>Discount</span>
+              <span id="discount-amount">-$0.00</span>
+            </div>
+            <div class="flex justify-between text-base font-bold pt-1">
+              <span>Total</span>
+              <span id="total-amount"><%= plan.priceLabel %></span>
+            </div>
+          </div>
+
+          <button type="submit" id="pay-button" class="btn-primary w-full px-6 py-3.5 rounded-xl text-white font-semibold text-sm flex items-center justify-center gap-2">
+            <i class="fa-solid fa-lock text-xs"></i>
+            <span>Subscribe to <%= plan.name %> - <%= plan.priceLabel %>/month</span>
+          </button>
+          <p id="pay-error" class="text-red-400 text-sm text-center"></p>
+
+          <p class="text-xs text-surface-500 flex items-center gap-1.5">
+            <i class="fa-solid fa-lock text-surface-600"></i>
+            Secured by Stripe. Payments are billed monthly and can be managed from your billing page.
+          </p>
+        </div>
       </div>
     </div>
   </div>
@@ -83,14 +142,98 @@
   <script src="https://js.stripe.com/dahlia/stripe.js"></script>
   <script>
     const stripe = Stripe('<%= publishableKey %>');
-    async function initializeCheckout() {
-      const fetchClientSecret = async () => '<%= clientSecret %>';
-      const checkout = await stripe.createEmbeddedCheckoutPage({ fetchClientSecret });
-      checkout.mount('#checkout');
+    const appearance = {
+      theme: 'night',
+      variables: {
+        colorPrimary: '#5c7cfa',
+        colorPrimaryText: '#ffffff',
+        colorBackground: '#161b22',
+        colorText: '#e6edf3',
+        colorTextSecondary: '#adb5bd',
+        colorBorder: '#30363d',
+        colorDanger: '#f87171',
+        colorIcon: '#adb5bd',
+        colorIconHover: '#5c7cfa',
+        fontFamily: 'Segoe UI, Roboto, Helvetica, Arial, sans-serif',
+        borderRadius: '12px'
+      }
+    };
+
+    const checkout = stripe.initCheckoutElementsSdk({
+      clientSecret: '<%= clientSecret %>',
+      elementsOptions: { appearance }
+    });
+
+    let actions = null;
+
+    const fmt = (cents) => '$' + (cents / 100).toFixed(2);
+
+    function updateSummary(session) {
+      const discount = session.total_details ? session.total_details.amount_discount : 0;
+      const subtotal = session.amount_subtotal != null ? session.amount_subtotal : session.amount_total + discount;
+      document.getElementById('line-total').textContent = fmt(subtotal);
+      const row = document.getElementById('discount-row');
+      if (discount > 0) {
+        row.style.display = 'flex';
+        document.getElementById('discount-amount').textContent = '-' + fmt(discount);
+      } else {
+        row.style.display = 'none';
+      }
+      document.getElementById('total-amount').textContent = fmt(session.amount_total);
     }
-    initializeCheckout().catch((err) => {
-      const el = document.getElementById('checkout');
-      el.innerHTML = '<p class="text-red-400 text-sm">Could not load the payment form: ' + (err && err.message ? err.message : err) + '</p>';
+
+    checkout.on('change', (session) => updateSummary(session));
+
+    async function initialize() {
+      const result = await checkout.loadActions();
+      if (result.type === 'error') throw result.error;
+      actions = result.actions;
+      updateSummary(await actions.getSession());
+      document.getElementById('pay-button').disabled = false;
+    }
+
+    const paymentElement = checkout.createPaymentElement({ layout: 'tabs' });
+    paymentElement.mount('#payment-element');
+
+    document.getElementById('promo-apply').addEventListener('click', async () => {
+      const input = document.getElementById('promo-input');
+      const status = document.getElementById('promo-status');
+      const code = input.value.trim();
+      if (!actions) { status.textContent = 'Checkout is still loading, please wait.'; return; }
+      if (!code) { status.textContent = ''; return; }
+      status.className = 'text-xs mt-1.5 text-surface-500';
+      status.textContent = 'Applying promo code...';
+      const res = await actions.applyPromotionCode(code);
+      if (res && res.error) {
+        status.className = 'text-xs mt-1.5 text-red-400';
+        status.textContent = res.error.message;
+      } else {
+        status.className = 'text-xs mt-1.5 text-green-400';
+        status.textContent = 'Promo code applied.';
+        input.value = '';
+      }
+    });
+
+    document.getElementById('pay-button').addEventListener('click', async (e) => {
+      e.preventDefault();
+      const btn = e.currentTarget;
+      const errEl = document.getElementById('pay-error');
+      if (!actions) { errEl.textContent = 'Checkout is still loading, please wait.'; return; }
+      btn.disabled = true;
+      btn.querySelector('span').textContent = 'Processing...';
+      errEl.textContent = '';
+      const res = await actions.confirm();
+      if (res && res.error) {
+        errEl.textContent = res.error.message;
+        btn.querySelector('span').textContent = 'Subscribe to <%= plan.name %> - <%= plan.priceLabel %>/month';
+        btn.disabled = false;
+      }
+    });
+
+    initialize().catch((err) => {
+      document.getElementById('checkout-error').innerHTML =
+        '<p class="text-red-400 text-sm mb-3">Could not load the payment form: ' +
+        (err && err.message ? err.message : err) + '</p>';
     });
   </script>
 </body>
