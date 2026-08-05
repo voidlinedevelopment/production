@@ -56,6 +56,17 @@ module.exports = {
       max_memory_restart: '256M'
     },
     {
+      name: 'production-db',
+      script: './db/server.js',
+      env: {
+        NODE_ENV: 'production'
+      },
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '256M'
+    },
+    {
       name: 'production-status',
       script: './status/server.js',
       env: {

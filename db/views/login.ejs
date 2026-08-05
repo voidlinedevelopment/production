@@ -1,0 +1,42 @@
+<div class="min-h-screen flex items-center justify-center px-6">
+  <div class="max-w-md w-full">
+    <div class="text-center mb-8">
+      <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center mx-auto mb-4">
+        <i class="fas fa-database text-white text-xl"></i>
+      </div>
+      <h1 class="text-3xl font-bold">Production DB</h1>
+      <p class="text-surface-400 mt-2">Restricted area. Admins only.</p>
+    </div>
+
+    <% if (redirect) { %>
+      <div class="rounded-xl p-4 mb-6 border border-brand-500/30 bg-brand-500/10 text-brand-300 text-sm">
+        <i class="fas fa-info-circle mr-2"></i>Sign in with Discord to access the database.
+      </div>
+    <% } %>
+
+    <div class="glass-card rounded-2xl p-6">
+      <div class="space-y-3 mb-6">
+        <div class="flex items-center gap-3">
+          <i class="fas fa-chevron-circle-right text-brand-400"></i>
+          <span class="text-sm text-surface-300">Browse and manage tables</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <i class="fas fa-chevron-circle-right text-brand-400"></i>
+          <span class="text-sm text-surface-300">Insert, edit and delete rows</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <i class="fas fa-chevron-circle-right text-brand-400"></i>
+          <span class="text-sm text-surface-300">Run raw SQL queries</span>
+        </div>
+      </div>
+      <a href="/auth/discord" class="btn-primary w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-white text-sm font-medium">
+        <i class="fab fa-discord"></i>
+        Sign in with Discord
+      </a>
+    </div>
+
+    <p class="text-center text-xs text-surface-600 mt-6">
+      <a href="<%= websiteUrl %>" class="text-brand-400 hover:text-brand-300">Back to Production</a>
+    </p>
+  </div>
+</div>
