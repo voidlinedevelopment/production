@@ -53,6 +53,8 @@ function startDirect() {
     { name: 'website', script: 'website/server.js', color: '36m' },
     { name: 'bot', script: 'bot/index.js', color: '32m' },
     { name: 'support', script: 'support/server.js', color: '35m' },
+    { name: 'checkout', script: 'checkout/server.js', color: '33m' },
+    { name: 'billing', script: 'billing/server.js', color: '34m' },
     { name: 'tunnel', script: 'scripts/start-tunnel.js', color: '33m' }
   ];
 

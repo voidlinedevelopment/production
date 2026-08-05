@@ -309,6 +309,10 @@ function initializeDatabase() {
   });
 }
 
+function isDuplicateColumnError(err) {
+  return err && err.message && err.message.includes('duplicate column name');
+}
+
 function migrate() {
   return new Promise((resolve, reject) => {
     db.all('PRAGMA table_info(users)', (err, cols) => {
@@ -316,7 +320,7 @@ function migrate() {
       const addAdmin = (cb) => {
         if (cols.some((c) => c.name === 'is_admin')) return cb();
         db.run('ALTER TABLE users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0', (migrateErr) => {
-          if (migrateErr) console.error('Migration error:', migrateErr.message);
+          if (migrateErr && !isDuplicateColumnError(migrateErr)) console.error('Migration error:', migrateErr.message);
           syncAdminIds().then(cb).catch(cb);
         });
       };
@@ -325,7 +329,7 @@ function migrate() {
           if (obsErr) return reject(obsErr);
           if (!obsCols.some((c) => c.name === 'agent_token')) {
             db.run('ALTER TABLE obs_connections ADD COLUMN agent_token TEXT', (migrateErr) => {
-              if (migrateErr) {
+              if (migrateErr && !isDuplicateColumnError(migrateErr)) {
                 console.error('Migration error:', migrateErr.message);
                 return resolve();
               }
@@ -360,7 +364,7 @@ function addOverlayText(resolve, reject) {
     if (err) return reject(err);
     if (cols.some((c) => c.name === 'overlay_text')) return addPublicIds(resolve, reject);
     db.run("ALTER TABLE obs_connections ADD COLUMN overlay_text TEXT DEFAULT ''", (migrateErr) => {
-      if (migrateErr) {
+      if (migrateErr && !isDuplicateColumnError(migrateErr)) {
         console.error('Migration error:', migrateErr.message);
       }
       addPublicIds(resolve, reject);
@@ -376,7 +380,7 @@ function addPublicIds(resolve, reject) {
       if (err) return cb(err);
       if (cols.some((c) => c.name === col)) return cb();
       db.run(`ALTER TABLE ${table} ADD COLUMN ${col} TEXT`, (migrateErr) => {
-        if (migrateErr) {
+        if (migrateErr && !isDuplicateColumnError(migrateErr)) {
           console.error('Migration error:', migrateErr.message);
           return cb();
         }
