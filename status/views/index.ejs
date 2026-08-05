@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> | Production</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: { 400: '#748ffc', 500: '#5c7cfa', 600: '#4c6ef5', 700: '#4263eb' },
+            surface: {
+              500: '#adb5bd', 600: '#868e96', 700: '#495057', 800: '#343a40',
+              900: '#212529', 950: '#0d1117'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    body { background-color: #0d1117; color: #e6edf3; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+    .glass-card { background: rgba(22, 27, 34, 0.6); border: 1px solid rgba(48, 54, 61, 0.4); }
+    .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+    .dot-up { background: #40c057; box-shadow: 0 0 8px rgba(64, 192, 87, 0.6); }
+    .dot-down { background: #fa5252; box-shadow: 0 0 8px rgba(250, 82, 82, 0.6); }
+    .gradient-text { background: linear-gradient(135deg, #748ffc, #5c7cfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  </style>
+</head>
+<body class="min-h-screen antialiased p-6">
+  <div class="max-w-3xl mx-auto">
+    <div class="flex items-center gap-2.5 mb-6 justify-center">
+      <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center">
+        <i class="fas fa-tower-broadcast text-white text-sm"></i>
+      </div>
+      <span class="text-lg font-bold gradient-text">Production</span>
+    </div>
+
+    <div id="overall" class="glass-card rounded-xl p-6 mb-6 flex items-center gap-4 <%= data.overall === 'operational' ? 'border-green-500/30' : 'border-amber-500/30' %>">
+      <span id="overall-dot" class="status-dot <%= data.overall === 'operational' ? 'dot-up' : 'dot-down' %> flex-shrink-0"></span>
+      <div>
+        <h1 id="overall-title" class="text-lg font-bold"><%= data.overall === 'operational' ? 'All systems operational' : 'Some systems are degraded' %></h1>
+        <p id="overall-sub" class="text-sm text-surface-500">
+          Checked <span id="checked-at"><%= new Date(data.generatedAt).toLocaleTimeString() %></span>
+          <span class="text-surface-600">·</span> updates automatically every 30s
+        </p>
+      </div>
+    </div>
+
+    <div class="space-y-3" id="services">
+      <% data.services.forEach(s => { %>
+        <div data-key="<%= s.key %>" class="glass-card rounded-xl p-4 flex items-center gap-4">
+          <span class="status-dot <%= s.up ? 'dot-up' : 'dot-down' %> flex-shrink-0"></span>
+          <div class="flex-1 min-w-0">
+            <p class="font-medium"><%= s.name %></p>
+            <p class="text-xs text-surface-500"><%= s.desc %></p>
+          </div>
+          <div class="text-right flex-shrink-0">
+            <p class="text-sm font-medium <%= s.up ? 'text-green-400' : 'text-red-400' %>"><%= s.up ? 'Operational' : 'Down' %></p>
+            <p class="text-xs text-surface-500"><%= s.detail || '' %></p>
+          </div>
+        </div>
+      <% }) %>
+      <div data-key="database" class="glass-card rounded-xl p-4 flex items-center gap-4">
+        <span class="status-dot <%= data.database.up ? 'dot-up' : 'dot-down' %> flex-shrink-0"></span>
+        <div class="flex-1 min-w-0">
+          <p class="font-medium">Database</p>
+          <p class="text-xs text-surface-500">SQLite storage</p>
+        </div>
+        <div class="text-right flex-shrink-0">
+          <p class="text-sm font-medium <%= data.database.up ? 'text-green-400' : 'text-red-400' %>"><%= data.database.up ? 'Operational' : 'Down' %></p>
+          <p class="text-xs text-surface-500"></p>
+        </div>
+      </div>
+    </div>
+
+    <p class="text-center text-xs text-surface-600 mt-8">
+      <a href="<%= process.env.WEBSITE_URL || '' %>" class="text-brand-400 hover:text-brand-300">production.ocrp.cc</a>
+      · <a href="<%= process.env.SUPPORT_URL || '' %>" class="text-brand-400 hover:text-brand-300">Support</a>
+    </p>
+  </div>
+
+  <script>
+    const dotClass = (up) => up ? 'dot-up' : 'dot-down';
+
+    function apply(data) {
+      const overall = data.overall === 'operational';
+      document.getElementById('overall').classList.toggle('border-green-500/30', overall);
+      document.getElementById('overall').classList.toggle('border-amber-500/30', !overall);
+      document.getElementById('overall-dot').className = 'status-dot ' + dotClass(overall) + ' flex-shrink-0';
+      document.getElementById('overall-title').textContent = overall ? 'All systems operational' : 'Some systems are degraded';
+      document.getElementById('checked-at').textContent = new Date(data.generatedAt).toLocaleTimeString();
+
+      data.services.forEach(s => {
+        const row = document.querySelector('[data-key="' + s.key + '"]');
+        if (!row) return;
+        row.querySelector('.status-dot').className = 'status-dot ' + dotClass(s.up) + ' flex-shrink-0';
+        const status = row.querySelector('.text-sm.font-medium');
+        status.textContent = s.up ? 'Operational' : 'Down';
+        status.className = 'text-sm font-medium ' + (s.up ? 'text-green-400' : 'text-red-400');
+        row.querySelectorAll('.text-xs')[1].textContent = s.detail || '';
+      });
+
+      const dbRow = document.querySelector('[data-key="database"]');
+      if (dbRow) {
+        dbRow.querySelector('.status-dot').className = 'status-dot ' + dotClass(data.database.up) + ' flex-shrink-0';
+        const status = dbRow.querySelector('.text-sm.font-medium');
+        status.textContent = data.database.up ? 'Operational' : 'Down';
+        status.className = 'text-sm font-medium ' + (data.database.up ? 'text-green-400' : 'text-red-400');
+      }
+    }
+
+    setInterval(async () => {
+      try {
+        const res = await fetch('/api/status');
+        if (res.ok) apply(await res.json());
+      } catch (err) {}
+    }, 30000);
+  </script>
+</body>
+</html>
