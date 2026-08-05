@@ -35,12 +35,20 @@ app.get('/', async (req, res) => {
   const plan = getPlan(req.query.plan);
 
   if (!teamId) {
-    return res.status(400).render('error', { title: 'Missing team', message: 'Missing ?team= query parameter.' });
+    return res.status(400).render('error', {
+      title: 'No team selected',
+      message: 'Please pick a team first, then head back to billing to upgrade.',
+      backUrl: BILLING_URL
+    });
   }
 
   const team = await getOne('SELECT id, name FROM teams WHERE id = ?', [teamId]);
   if (!team) {
-    return res.status(404).render('error', { title: 'Team not found', message: 'That team does not exist.' });
+    return res.status(404).render('error', {
+      title: 'Team not found',
+      message: "We couldn't find that team. Please pick a team first, then head back to billing.",
+      backUrl: BILLING_URL
+    });
   }
 
   if (!stripe || !PUBLISHABLE_KEY) {
