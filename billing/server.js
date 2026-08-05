@@ -106,7 +106,7 @@ app.post('/api/portal', async (req, res) => {
 
   const sub = await getSubscription(teamId);
   if (!sub || !sub.stripe_customer_id) {
-    return res.redirect(`${CHECKOUT_URL}/?team=${teamId}&plan=${getPlan(sub ? sub.plan : 'free').key}`);
+    return res.redirect(`${CHECKOUT_URL}/?team=${teamId}&plan=creator`);
   }
 
   try {
