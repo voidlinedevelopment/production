@@ -84,8 +84,7 @@
   <script>
     const stripe = Stripe('<%= publishableKey %>');
     async function initializeCheckout() {
-      const fetchClientSecret = async () => ({ clientSecret: '<%= clientSecret %>' });
-      const checkout = await stripe.initCheckoutElementsSdk({ fetchClientSecret });
+      const checkout = await stripe.initCheckoutElementsSdk({ clientSecret: '<%= clientSecret %>' });
       checkout.mount('#checkout');
     }
     initializeCheckout().catch((err) => {
