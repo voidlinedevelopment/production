@@ -10,6 +10,7 @@ const helmet = require('helmet');
 const compression = require('compression');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
+const ejsLayouts = require('express-ejs-layouts');
 const { initializeDatabase, getOne, getAll, runQuery } = require('../shared/database');
 const { getPlan, PLAN_ORDER } = require('../shared/plans');
 
@@ -50,6 +51,8 @@ app.use(express.urlencoded({ extended: true }));
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
+app.use(ejsLayouts);
+app.set('layout', 'partials/layout');
 
 // SQLite session store shared with the website so logins carry across
 class SQLiteSessionStore extends session.Store {
