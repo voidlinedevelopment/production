@@ -19,7 +19,7 @@ const PUBLISHABLE_KEY = process.env.STRIPE_PUBLISHABLE_KEY || '';
 let stripe = null;
 if (STRIPE_KEY) {
   try {
-    stripe = require('stripe')(STRIPE_KEY);
+    stripe = require('stripe')(STRIPE_KEY, { apiVersion: '2025-03-31.basil' });
     console.log('checkout: Stripe configured');
   } catch (err) {
     console.error('checkout: could not load stripe:', err.message);
