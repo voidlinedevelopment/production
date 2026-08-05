@@ -84,7 +84,7 @@
         <div class="space-y-5">
           <div>
             <label class="block text-sm font-medium text-surface-400 mb-1.5">Email</label>
-            <div id="contact-details-element" class="bg-surface-900 border border-surface-700 rounded-xl p-3"></div>
+            <div id="contact-details-element"></div>
           </div>
 
           <div>
@@ -100,7 +100,7 @@
 
           <div>
             <label class="block text-sm font-medium text-surface-400 mb-1.5">Payment method</label>
-            <div id="payment-element" class="bg-surface-900 border border-surface-700 rounded-xl p-3"></div>
+            <div id="payment-element"></div>
           </div>
 
           <div class="border-t border-surface-700/60 pt-4 space-y-2 text-sm">
@@ -141,15 +141,40 @@
       variables: {
         colorPrimary: '#5c7cfa',
         colorPrimaryText: '#ffffff',
-        colorBackground: '#161b22',
+        colorBackground: 'transparent',
         colorText: '#e6edf3',
         colorTextSecondary: '#adb5bd',
-        colorBorder: '#30363d',
+        colorBorder: '#343a40',
         colorDanger: '#f87171',
         colorIcon: '#adb5bd',
         colorIconHover: '#5c7cfa',
         fontFamily: 'Segoe UI, Roboto, Helvetica, Arial, sans-serif',
-        borderRadius: '12px'
+        borderRadius: '12px',
+        spacingUnit: '4px',
+        gridRowSpacing: '12px'
+      },
+      rules: {
+        '.Input': {
+          backgroundColor: 'transparent',
+          borderColor: '#343a40',
+          color: '#e6edf3'
+        },
+        '.Input:focus': {
+          borderColor: '#5c7cfa',
+          boxShadow: '0 0 0 1px #5c7cfa'
+        },
+        '.Label': { color: '#adb5bd', fontSize: '13px', fontWeight: '500' },
+        '.Tab': {
+          backgroundColor: 'transparent',
+          borderColor: '#30363d',
+          color: '#adb5bd'
+        },
+        '.Tab--selected': {
+          backgroundColor: '#1b1f2a',
+          borderColor: '#5c7cfa',
+          color: '#e6edf3'
+        },
+        '.Error': { color: '#f87171' }
       }
     };
 
