@@ -1,6 +1,6 @@
 <div class="max-w-6xl mx-auto">
   <div class="mb-8">
-    <a href="/admin" class="text-surface-400 hover:text-white text-sm inline-flex items-center gap-1 mb-4">
+    <a href="/" class="text-surface-400 hover:text-white text-sm inline-flex items-center gap-1 mb-4">
       <i class="fas fa-arrow-left"></i> Back to Admin
     </a>
     <h1 class="text-2xl font-bold">Support Queue</h1>
@@ -15,7 +15,7 @@
   <% } else { %>
     <div class="space-y-3">
       <% tickets.forEach(ticket => { %>
-        <a href="<%= billingUrl %>" class="glass-card rounded-xl p-4 flex items-center gap-4 block">
+        <a href="<%= supportUrl %>/tickets/<%= ticket.id %>" target="_blank" rel="noopener" class="glass-card rounded-xl p-4 flex items-center gap-4 block">
           <div class="w-10 h-10 rounded-lg bg-brand-600/15 flex items-center justify-center flex-shrink-0">
             <i class="fas fa-ticket-alt text-brand-400 text-sm"></i>
           </div>

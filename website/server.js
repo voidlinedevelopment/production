@@ -185,6 +185,7 @@ app.use((req, res, next) => {
   res.locals.currentPath = req.path;
   res.locals.billingUrl = process.env.BILLING_URL || '';
   res.locals.supportUrl = process.env.SUPPORT_URL || '';
+  res.locals.adminUrl = process.env.ADMIN_URL || '';
   if (req.query.error) res.locals.error = req.query.error;
   if (req.query.success) res.locals.success = req.query.success;
   next();
@@ -207,7 +208,6 @@ const memberRoutes = require('./routes/members');
 const roleRoutes = require('./routes/roles');
 const settingsRoutes = require('./routes/settings');
 const agentRoutes = require('./routes/agent');
-const adminRoutes = require('./routes/admin');
 
 app.use('/auth', authRoutes);
 app.use('/dashboard', dashboardRoutes);
@@ -219,7 +219,6 @@ app.use('/members', memberRoutes);
 app.use('/roles', roleRoutes);
 app.use('/settings', settingsRoutes);
 app.use('/agent', agentRoutes);
-app.use('/admin', adminRoutes);
 
 // Home route
 app.get('/', (req, res) => {

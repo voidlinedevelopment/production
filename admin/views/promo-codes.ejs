@@ -1,6 +1,6 @@
 <div class="max-w-5xl mx-auto">
   <div class="mb-8">
-    <a href="/admin" class="text-surface-400 hover:text-white text-sm inline-flex items-center gap-1 mb-4">
+    <a href="/" class="text-surface-400 hover:text-white text-sm inline-flex items-center gap-1 mb-4">
       <i class="fas fa-arrow-left"></i> Back to Admin
     </a>
     <h1 class="text-2xl font-bold">Promo Codes</h1>
@@ -18,7 +18,7 @@
     </div>
   <% } %>
 
-  <form method="POST" action="/admin/promo-codes" class="glass-card rounded-xl p-6 mb-8">
+  <form method="POST" action="/promo-codes" class="glass-card rounded-xl p-6 mb-8">
     <h2 class="text-lg font-semibold mb-4">Create Promo Code</h2>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <div>
@@ -76,12 +76,12 @@
               <td class="py-3 px-4 text-surface-500"><%= code.created_by_name || '—' %></td>
               <td class="py-3 px-4">
                 <div class="flex justify-end gap-2">
-                  <form method="POST" action="/admin/promo-codes/<%= code.id %>/toggle">
+                  <form method="POST" action="/promo-codes/<%= code.id %>/toggle">
                     <button type="submit" class="px-3 py-1.5 rounded-lg bg-surface-800 hover:bg-surface-700 text-xs font-medium transition-colors">
                       <i class="fas <%= code.active ? 'fa-pause' : 'fa-play' %> mr-1"></i><%= code.active ? 'Disable' : 'Enable' %>
                     </button>
                   </form>
-                  <form method="POST" action="/admin/promo-codes/<%= code.id %>/delete" onsubmit="return confirm('Delete this promo code?')">
+                  <form method="POST" action="/promo-codes/<%= code.id %>/delete" onsubmit="return confirm('Delete this promo code?')">
                     <button type="submit" class="px-3 py-1.5 rounded-lg bg-red-500/15 hover:bg-red-500/25 text-red-400 text-xs font-medium transition-colors">
                       <i class="fas fa-trash mr-1"></i>Delete
                     </button>

@@ -1,10 +1,27 @@
 const express = require('express');
-const crypto = require('crypto');
 const router = express.Router();
-const { isAuthenticated } = require('../middleware/auth');
-const { requireAdmin } = require('../middleware/admin');
-const { getAll, getOne, runQuery } = require('../../shared/database');
-const { getPlan } = require('../../shared/plans');
+const { getAll, getOne, runQuery } = require('../shared/database');
+const { getPlan } = require('../shared/plans');
+
+function isAuthenticated(req, res, next) {
+  if (req.isAuthenticated()) return next();
+  return res.redirect('/login?redirected=1');
+}
+
+function requireAdmin(req, res, next) {
+  if (req.user && req.user.is_admin) {
+    return next();
+  }
+  res.status(403).render('error', {
+    title: 'Access Denied',
+    message: 'You must be an admin to access this page.'
+  });
+}
+
+router.get('/login', (req, res) => {
+  if (req.isAuthenticated() && req.user.is_admin) return res.redirect('/');
+  res.render('login', { title: 'Admin Login', redirect: req.query.redirected === '1' });
+});
 
 router.use(isAuthenticated, requireAdmin);
 
@@ -25,7 +42,7 @@ router.get('/', async (req, res) => {
        ORDER BY s.updated_at DESC LIMIT 8`
     );
 
-    res.render('admin/index', {
+    res.render('index', {
       title: 'Admin Dashboard',
       counts: { userCount, teamCount, prodCount, liveCount, subCount, ticketCount },
       recentUsers,
@@ -34,7 +51,7 @@ router.get('/', async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res.status(500).render('error', { title: 'Error', message: 'Failed to load admin dashboard.', user: req.user });
+    res.status(500).render('error', { title: 'Error', message: 'Failed to load admin dashboard.' });
   }
 });
 
@@ -45,10 +62,10 @@ router.get('/promo-codes', async (req, res) => {
        LEFT JOIN users u ON u.id = pc.created_by
        ORDER BY pc.created_at DESC`
     );
-    res.render('admin/promo-codes', { title: 'Promo Codes', codes });
+    res.render('promo-codes', { title: 'Promo Codes', codes });
   } catch (err) {
     console.error(err);
-    res.status(500).render('error', { title: 'Error', message: 'Failed to load promo codes.', user: req.user });
+    res.status(500).render('error', { title: 'Error', message: 'Failed to load promo codes.' });
   }
 });
 
@@ -59,12 +76,12 @@ router.post('/promo-codes', async (req, res) => {
     const percent = Math.min(Math.max(parseInt(percent_off, 10) || 0, 1), 100);
 
     if (!normalized || !/^[A-Z0-9_-]+$/.test(normalized)) {
-      return res.redirect('/admin/promo-codes?error=Invalid code. Use letters, numbers, dash or underscore.');
+      return res.redirect('/promo-codes?error=Invalid code. Use letters, numbers, dash or underscore.');
     }
 
     const existing = await getOne('SELECT id FROM promo_codes WHERE code = ?', [normalized]);
     if (existing) {
-      return res.redirect('/admin/promo-codes?error=That code already exists.');
+      return res.redirect('/promo-codes?error=That code already exists.');
     }
 
     let couponId = null;
@@ -93,65 +110,65 @@ router.post('/promo-codes', async (req, res) => {
       'INSERT INTO promo_codes (code, percent_off, max_uses, stripe_coupon_id, created_by) VALUES (?, ?, ?, ?, ?)',
       [normalized, percent, max_uses ? parseInt(max_uses, 10) : null, couponId, req.user.id]
     );
-    res.redirect('/admin/promo-codes?success=Promo code created.');
+    res.redirect('/promo-codes?success=Promo code created.');
   } catch (err) {
     console.error(err);
-    res.redirect('/admin/promo-codes?error=Failed to create promo code.');
+    res.redirect('/promo-codes?error=Failed to create promo code.');
   }
 });
 
 router.post('/promo-codes/:id/toggle', async (req, res) => {
   try {
     await runQuery('UPDATE promo_codes SET active = NOT active WHERE id = ?', [req.params.id]);
-    res.redirect('/admin/promo-codes');
+    res.redirect('/promo-codes');
   } catch (err) {
-    res.redirect('/admin/promo-codes');
+    res.redirect('/promo-codes');
   }
 });
 
 router.post('/promo-codes/:id/delete', async (req, res) => {
   try {
     await runQuery('DELETE FROM promo_codes WHERE id = ?', [req.params.id]);
-    res.redirect('/admin/promo-codes');
+    res.redirect('/promo-codes');
   } catch (err) {
-    res.redirect('/admin/promo-codes');
+    res.redirect('/promo-codes');
   }
 });
 
 router.get('/admins', async (req, res) => {
   try {
     const admins = await getAll('SELECT id, discord_id, username, global_name, avatar, created_at FROM users WHERE is_admin = 1');
-    res.render('admin/admins', { title: 'Admins', admins });
+    res.render('admins', { title: 'Admins', admins });
   } catch (err) {
     console.error(err);
-    res.status(500).render('error', { title: 'Error', message: 'Failed to load admins.', user: req.user });
+    res.status(500).render('error', { title: 'Error', message: 'Failed to load admins.' });
   }
 });
 
 router.post('/admins/promote', async (req, res) => {
   try {
     const { discord_id } = req.body;
-    if (!discord_id) return res.redirect('/admin/admins?error=Missing Discord ID');
+    if (!discord_id) return res.redirect('/admins?error=Missing Discord ID');
     const result = await runQuery('UPDATE users SET is_admin = 1 WHERE discord_id = ?', [String(discord_id).trim()]);
     if (result.changes === 0) {
-      return res.redirect('/admin/admins?error=No user found with that Discord ID.');
+      return res.redirect('/admins?error=No user found with that Discord ID.');
     }
-    res.redirect('/admin/admins?success=User promoted to admin.');
+    res.redirect('/admins?success=User promoted to admin.');
   } catch (err) {
     console.error(err);
-    res.redirect('/admin/admins?error=Failed to promote user.');
+    res.redirect('/admins?error=Failed to promote user.');
   }
 });
 
 router.post('/admins/:id/demote', async (req, res) => {
   try {
     if (parseInt(req.params.id, 10) === req.user.id) {
-      return res.redirect('/admin/admins?error=You cannot demote yourself.');
+      return res.redirect('/admins?error=You cannot demote yourself.');
     }
     await runQuery('UPDATE users SET is_admin = 0 WHERE id = ?', [req.params.id]);
-    res.redirect('/admin/admins');
+    res.redirect('/admins');
   } catch (err) {
-    res.redirect('/admin/admins');
+    res.redirect('/admins');
   }
 });
 
@@ -162,10 +179,10 @@ router.get('/support', async (req, res) => {
        FROM support_tickets st LEFT JOIN users u ON u.id = st.user_id
        ORDER BY st.status = 'closed', st.updated_at DESC`
     );
-    res.render('admin/support', { title: 'Support Queue', tickets });
+    res.render('support', { title: 'Support Queue', tickets });
   } catch (err) {
     console.error(err);
-    res.status(500).render('error', { title: 'Error', message: 'Failed to load support queue.', user: req.user });
+    res.status(500).render('error', { title: 'Error', message: 'Failed to load support queue.' });
   }
 });
 

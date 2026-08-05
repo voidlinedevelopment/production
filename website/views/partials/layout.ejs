@@ -96,7 +96,7 @@
           <span>OBS Control</span>
         </a>
         <% if (user.is_admin) { %>
-          <a href="/admin" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-yellow-400/90 <%= currentPath.startsWith('/admin') ? 'active' : '' %>">
+          <a href="<%= adminUrl %>" target="_blank" rel="noopener" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-yellow-400/90">
             <i class="fas fa-shield-alt w-5 text-center"></i>
             <span>Admin</span>
           </a>
