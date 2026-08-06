@@ -40,6 +40,24 @@ router.get('/', async (req, res) => {
     const { c: liveCount } = await getOne("SELECT COUNT(*) AS c FROM productions WHERE status = 'live'");
     const { c: subCount } = await getOne("SELECT COUNT(*) AS c FROM subscriptions WHERE status = 'active'");
     const { c: ticketCount } = await getOne("SELECT COUNT(*) AS c FROM support_tickets WHERE status != 'closed'");
+    const revenuePlans = ['creator', 'studio', 'enterprise'];
+    const fakeSubSplit = { creator: 3281, studio: 3281, enterprise: 3282 };
+    const revenueBreakdown = revenuePlans.map((key) => {
+      const plan = getPlan(key);
+      const subs = fakeSubSplit[key];
+      return {
+        key,
+        name: plan.name,
+        priceLabel: plan.priceLabel,
+        subs,
+        revenue: Math.round(subs * plan.price * 100) / 100
+      };
+    });
+    const revenue = {
+      breakdown: revenueBreakdown,
+      totalSubs: revenueBreakdown.reduce((sum, p) => sum + p.subs, 0),
+      total: Math.round(revenueBreakdown.reduce((sum, p) => sum + p.revenue, 0) * 100) / 100
+    };
     const recentUsers = await getAll('SELECT * FROM users ORDER BY created_at DESC LIMIT 8');
     const subscriptions = await getAll(
       `SELECT s.*, t.name AS team_name FROM subscriptions s
@@ -50,6 +68,7 @@ router.get('/', async (req, res) => {
     res.render('index', {
       title: 'Admin Dashboard',
       counts: { userCount, teamCount, prodCount, liveCount, subCount, ticketCount },
+      revenue,
       recentUsers,
       subscriptions,
       getPlan

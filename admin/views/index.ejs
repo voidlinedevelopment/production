@@ -4,6 +4,27 @@
     <p class="text-surface-400 mt-1">Platform overview and management tools.</p>
   </div>
 
+  <% const money = (n) => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); %>
+
+  <div class="glass-card rounded-xl p-5 mb-8">
+    <div class="flex items-center justify-between flex-wrap gap-6">
+      <div>
+        <p class="text-xs text-surface-500 uppercase tracking-wider">Total Revenue</p>
+        <p class="text-4xl font-bold text-green-400 mt-1">$<%= money(revenue.total) %></p>
+        <p class="text-xs text-surface-500 mt-1">from <%= revenue.totalSubs.toLocaleString() %> paid subscriptions</p>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-1 sm:max-w-2xl">
+        <% revenue.breakdown.forEach(p => { %>
+          <div class="rounded-lg bg-surface-800/50 p-3.5">
+            <p class="text-sm font-medium"><%= p.name %></p>
+            <p class="text-xs text-surface-500 mt-0.5"><%= p.subs.toLocaleString() %> subs × <%= p.priceLabel %></p>
+            <p class="text-xl font-bold text-surface-200 mt-1.5">$<%= money(p.revenue) %></p>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+  </div>
+
   <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
     <% const stats = [
       { label: 'Users', value: counts.userCount, icon: 'fa-users', color: 'text-blue-400 bg-blue-500/15' },
