@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getAll, getOne, runQuery } = require('../shared/database');
+const { getAll, getOne, runQuery, getSetting, setSetting } = require('../shared/database');
 const { getPlan } = require('../shared/plans');
 
 const PROTECTED_ADMIN_IDS = (process.env.PROTECTED_ADMIN_IDS || '1258620191890341921')
@@ -32,6 +32,34 @@ router.use(isAuthenticated, requireAdmin);
 
 const PROMO_CATEGORIES = ['billing', 'support', 'users'];
 
+const REVENUE_PLANS = ['creator', 'studio', 'enterprise'];
+
+function computeRevenue(paidSubs) {
+  const total = Math.max(0, parseInt(paidSubs, 10) || 0);
+  const count = REVENUE_PLANS.length;
+  const base = Math.floor(total / count);
+  const remainder = total % count;
+  const split = REVENUE_PLANS.map((key, i) => ({
+    key,
+    subs: base + (i >= count - remainder ? 1 : 0)
+  }));
+  const breakdown = split.map(({ key, subs }) => {
+    const plan = getPlan(key);
+    return {
+      key,
+      name: plan.name,
+      priceLabel: plan.priceLabel,
+      subs,
+      revenue: Math.round(subs * plan.price * 100) / 100
+    };
+  });
+  return {
+    breakdown,
+    totalSubs: breakdown.reduce((sum, p) => sum + p.subs, 0),
+    total: Math.round(breakdown.reduce((sum, p) => sum + p.revenue, 0) * 100) / 100
+  };
+}
+
 router.get('/', async (req, res) => {
   try {
     const { c: userCount } = await getOne('SELECT COUNT(*) AS c FROM users');
@@ -40,24 +68,8 @@ router.get('/', async (req, res) => {
     const { c: liveCount } = await getOne("SELECT COUNT(*) AS c FROM productions WHERE status = 'live'");
     const { c: subCount } = await getOne("SELECT COUNT(*) AS c FROM subscriptions WHERE status = 'active'");
     const { c: ticketCount } = await getOne("SELECT COUNT(*) AS c FROM support_tickets WHERE status != 'closed'");
-    const revenuePlans = ['creator', 'studio', 'enterprise'];
-    const fakeSubSplit = { creator: 3281, studio: 3281, enterprise: 3282 };
-    const revenueBreakdown = revenuePlans.map((key) => {
-      const plan = getPlan(key);
-      const subs = fakeSubSplit[key];
-      return {
-        key,
-        name: plan.name,
-        priceLabel: plan.priceLabel,
-        subs,
-        revenue: Math.round(subs * plan.price * 100) / 100
-      };
-    });
-    const revenue = {
-      breakdown: revenueBreakdown,
-      totalSubs: revenueBreakdown.reduce((sum, p) => sum + p.subs, 0),
-      total: Math.round(revenueBreakdown.reduce((sum, p) => sum + p.revenue, 0) * 100) / 100
-    };
+    const paidSubs = await getSetting('revenue_paid_subs', '9844');
+    const revenue = computeRevenue(paidSubs);
     const recentUsers = await getAll('SELECT * FROM users ORDER BY created_at DESC LIMIT 8');
     const subscriptions = await getAll(
       `SELECT s.*, t.name AS team_name FROM subscriptions s
@@ -69,6 +81,7 @@ router.get('/', async (req, res) => {
       title: 'Admin Dashboard',
       counts: { userCount, teamCount, prodCount, liveCount, subCount, ticketCount },
       revenue,
+      paidSubs,
       recentUsers,
       subscriptions,
       getPlan
@@ -76,6 +89,18 @@ router.get('/', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).render('error', { title: 'Error', message: 'Failed to load admin dashboard.' });
+  }
+});
+
+router.post('/revenue', async (req, res) => {
+  try {
+    const raw = parseInt(req.body.paid_subs, 10);
+    const value = Number.isNaN(raw) ? 0 : Math.max(0, raw);
+    await setSetting('revenue_paid_subs', String(value));
+    res.redirect('/?success=Revenue updated.');
+  } catch (err) {
+    console.error(err);
+    res.redirect('/?error=Failed to update revenue.');
   }
 });
 

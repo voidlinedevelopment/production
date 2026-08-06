@@ -277,6 +277,12 @@ function initializeDatabase() {
       created_by INTEGER,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE
+    )`,
+
+    `CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL DEFAULT '',
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`
   ];
 
@@ -463,6 +469,18 @@ function upsertSubscription({ teamId, stripeCustomerId, stripeSubscriptionId, pl
   );
 }
 
+function getSetting(key, fallback = null) {
+  return getOne('SELECT value FROM settings WHERE key = ?', [key]).then((row) => (row ? row.value : fallback));
+}
+
+function setSetting(key, value) {
+  return runQuery(
+    `INSERT INTO settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP`,
+    [key, String(value)]
+  );
+}
+
 module.exports = {
   getDatabase,
   initializeDatabase,
@@ -473,5 +491,7 @@ module.exports = {
   getAll,
   getSubscription,
   getTeamPlan,
-  upsertSubscription
+  upsertSubscription,
+  getSetting,
+  setSetting
 };
